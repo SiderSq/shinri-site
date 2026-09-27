@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Component } from 'react';
 import {
   Shield,
   Key,
@@ -35,11 +35,57 @@ import {
   ChevronRight,
   Clipboard,
   Download,
-  FolderOpen
+  FolderOpen,
+  Crosshair,
+  Eye,
+  Edit3
 } from 'lucide-react';
 import { SoundFX } from '../SoundFX';
 import { DANGANRONPA_CHARACTERS, createSuspectFromCharacter } from '../../data/characters';
 import { DEBATE_TEMPLATES } from '../../data/debateTemplates';
+
+class AdminTabErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('Admin tab render error:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 bg-red-950/20 border-2 border-red-500 rounded-lg space-y-4 font-mono text-xs animate-shake">
+          <div className="flex items-center gap-2 text-red-400 font-bold text-sm">
+            <AlertTriangle size={20} />
+            <span>ОШИБКА ОТОБРАЖЕНИЯ ВКЛАДКИ</span>
+          </div>
+          <p className="text-gray-300">
+            В этой вкладке возникла ошибка отображения. Ваши данные дела находятся в безопасности.
+          </p>
+          <div className="p-3 bg-black/60 rounded border border-red-900/50 text-red-300 overflow-x-auto text-[11px]">
+            {this.state.error?.message || 'Неизвестная ошибка'}
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                if (this.props.onResetTab) this.props.onResetTab();
+              }}
+              className="dr-btn py-1.5 px-4 text-xs font-cyber text-white bg-red-600/30 border-red-500 hover:bg-red-600/50"
+            >
+              СБРОСИТЬ И ПЕРЕЙТИ В «ПАРАМЕТРЫ ДЕЛА»
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function AdminDashboard({ onClose }) {
   const [authToken, setAuthToken] = useState(localStorage.getItem('shinri_admin_token') || '');
@@ -82,6 +128,11 @@ export default function AdminDashboard({ onClose }) {
   const [isDraggingScreenshot, setIsDraggingScreenshot] = useState(false);
   const [pastedNotice, setPastedNotice] = useState(false);
   const [suspectSearchQuery, setSuspectSearchQuery] = useState('');
+  const [editingMediaId, setEditingMediaId] = useState(null);
+  const [mediaSearchQuery, setMediaSearchQuery] = useState('');
+  const [mediaCategoryFilter, setMediaCategoryFilter] = useState('ALL');
+  const [viewingMediaUrl, setViewingMediaUrl] = useState(null);
+  const [viewingMediaTitle, setViewingMediaTitle] = useState('');
   const fileInputRef = useRef(null);
   const jsonInputRef = useRef(null);
   const dashboardContainerRef = useRef(null);
@@ -987,15 +1038,15 @@ export default function AdminDashboard({ onClose }) {
 
   // Admin tabs navigation
   const adminTabs = [
-    { id: 'case', label: 'Параметры Дела', icon: Database },
-    { id: 'suspects', label: `Подозреваемые (${(caseData?.suspects || []).length})`, icon: Users },
-    { id: 'debate', label: 'Конструктор Дебатов', icon: MessageSquare },
-    { id: 'players', label: `Игроки (${playerSessions.length})`, icon: UserCheck, highlight: playerSessions.length > 0 },
-    { id: 'documents', label: 'Файл Монокумы', icon: FileText },
-    { id: 'media', label: `Фото и Скриншоты (${(caseData?.media || []).length})`, icon: ImageIcon, highlight: Boolean(uploadPreview) },
-    { id: 'hints', label: 'Подсказки', icon: HelpCircle },
-    { id: 'locks', label: `Блокировки IP (${locks.length})`, icon: Unlock, highlight: locks.length > 0 },
-    { id: 'audit', label: 'Аудит', icon: Shield }
+    { id: 'case', label: 'Параметры Дела', icon: Database, badge: null },
+    { id: 'suspects', label: 'Ученики', icon: Users, badge: (caseData?.suspects || []).length },
+    { id: 'media', label: 'Фотоархив', icon: ImageIcon, badge: (caseData?.media || []).length, highlight: Boolean(uploadPreview) },
+    { id: 'documents', label: 'Файл Монокумы', icon: FileText, badge: (caseData?.documents || []).length },
+    { id: 'players', label: 'Игроки', icon: UserCheck, badge: playerSessions.length, highlight: playerSessions.length > 0 },
+    { id: 'hints', label: 'Подсказки', icon: HelpCircle, badge: (caseData?.hints || []).length },
+    { id: 'locks', label: 'Блокировки IP', icon: Unlock, badge: locks.length, highlight: locks.length > 0 },
+    { id: 'debate', label: 'Дебаты (ARG)', icon: MessageSquare, tag: 'ARG' },
+    { id: 'audit', label: 'Аудит', icon: Shield, badge: null }
   ];
 
   // If not logged in as Admin, show login screen
@@ -1153,17 +1204,17 @@ export default function AdminDashboard({ onClose }) {
             <span>Состав раунда (48)</span>
           </button>
 
-          {/* 2. Debate Templates */}
+          {/* 2. Photo Archive / Evidence */}
           <button
             onClick={() => {
               SoundFX.playClick();
-              setActiveTab('debate');
+              setActiveTab('media');
             }}
-            className="px-2.5 py-1 rounded bg-[#141b2f] hover:bg-[#1c2642] border border-[#263556] hover:border-[#ff2a85] text-white flex items-center gap-1.5 transition-colors"
-            title="Перейти к конструктору дебатов и применить готовый шаблон"
+            className="px-2.5 py-1 rounded bg-[#141b2f] hover:bg-[#1c2642] border border-[#263556] hover:border-[#00f3ff] text-white flex items-center gap-1.5 transition-colors"
+            title="Перейти к фотоархиву улик и скриншотов"
           >
-            <MessageSquare size={12} className="text-[#ff2a85]" />
-            <span>Шаблоны дебатов</span>
+            <ImageIcon size={12} className="text-[#00f3ff]" />
+            <span>Фотоархив ({(caseData?.media || []).length})</span>
           </button>
 
           {/* 3. Paste Screenshot */}
@@ -1316,7 +1367,7 @@ export default function AdminDashboard({ onClose }) {
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
         
         {/* Navigation Tabs */}
-        <div className="flex flex-wrap gap-1.5 border-b border-[#1b233a] pb-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin border-b border-[#1b233a]">
           {adminTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1327,20 +1378,40 @@ export default function AdminDashboard({ onClose }) {
                   SoundFX.playClick();
                   setActiveTab(tab.id);
                 }}
-                className={`px-3 py-2 rounded text-xs font-mono flex items-center gap-1.5 transition-all border ${
+                className={`px-3.5 py-2 rounded-lg text-xs font-mono flex items-center gap-2 whitespace-nowrap transition-all border shrink-0 ${
                   isActive
-                    ? 'bg-[#182138] border-[#00f3ff] text-white font-bold shadow-[0_0_10px_rgba(0,243,255,0.2)]'
+                    ? 'bg-[#18233d] border-[#00f3ff] text-white font-bold shadow-[0_0_12px_rgba(0,243,255,0.25)]'
                     : tab.highlight
-                    ? 'bg-[#ff2a85]/15 border-[#ff2a85] text-[#ff2a85]'
-                    : 'bg-[#0e121e] border-[#182035] text-gray-400 hover:text-white'
+                    ? 'bg-[#ff2a85]/15 border-[#ff2a85] text-[#ff2a85] hover:bg-[#ff2a85]/25'
+                    : 'bg-[#0b0e18] border-[#182035] text-gray-400 hover:text-white hover:border-[#263556]'
                 }`}
               >
-                <Icon size={14} />
+                <Icon size={14} className={isActive ? 'text-[#00f3ff]' : tab.highlight ? 'text-[#ff2a85]' : 'text-gray-400'} />
                 <span>{tab.label}</span>
+                {tab.badge !== null && tab.badge !== undefined && (
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold leading-tight ${
+                      isActive
+                        ? 'bg-[#00f3ff]/20 text-[#00f3ff] border border-[#00f3ff]/40'
+                        : tab.highlight
+                        ? 'bg-[#ff2a85]/30 text-white'
+                        : 'bg-[#141b2f] text-gray-400 border border-[#222d4a]'
+                    }`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+                {tab.tag && (
+                  <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded font-bold">
+                    {tab.tag}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
+
+        <AdminTabErrorBoundary onResetTab={() => setActiveTab('case')}>
 
         {/* Tab 1: Case Core Settings */}
         {activeTab === 'case' && caseData && (
@@ -1939,186 +2010,367 @@ export default function AdminDashboard({ onClose }) {
               </div>
             </div>
 
-            <div className="space-y-4 font-mono text-xs">
-              {(caseData.media || []).map((item, idx) => (
-                <div key={item.id || idx} className="p-4 bg-[#0a0d16] border border-[#1b233a] rounded space-y-3">
-                  <div className="flex flex-wrap justify-between items-center border-b border-gray-800 pb-2 gap-2">
-                    <span className="font-bold text-white text-sm flex items-center gap-2">
-                      <ImageIcon size={16} className="text-[#00f3ff]" />
-                      <span>{item.title || 'Снимок'}</span>
-                    </span>
-                    <span className="text-[#00f3ff] uppercase font-bold text-[10px] bg-[#11192e] px-2 py-0.5 rounded border border-[#1e2f55]">
-                      ID: {item.id} // {item.code}
-                    </span>
+            {/* Evidence Gallery Search & Filter Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-[#0a0e1c] border border-[#1d2745] p-3 rounded-lg font-mono text-xs">
+              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                <Search size={14} className="text-[#00f3ff]" />
+                <input
+                  type="text"
+                  value={mediaSearchQuery}
+                  onChange={(e) => setMediaSearchQuery(e.target.value)}
+                  placeholder="Поиск снимка по названию или описанию..."
+                  className="bg-transparent text-xs text-white placeholder-gray-500 focus:outline-none w-full"
+                />
+                {mediaSearchQuery && (
+                  <button
+                    onClick={() => setMediaSearchQuery('')}
+                    className="text-gray-400 hover:text-white text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-gray-500 text-[11px] mr-1">Фильтр:</span>
+                {[
+                  { id: 'ALL', label: `Все (${(caseData.media || []).length})` },
+                  { id: 'crime_scene', label: 'Место преступления' },
+                  { id: 'victim', label: 'Тело / Жертва' },
+                  { id: 'clue', label: 'Улика' },
+                  { id: 'alibi', label: 'Алиби' }
+                ].map((f) => {
+                  const isSelected = mediaCategoryFilter === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setMediaCategoryFilter(f.id)}
+                      className={`px-2.5 py-1 rounded text-[11px] transition-colors border ${
+                        isSelected
+                          ? 'bg-[#00f3ff]/20 text-[#00f3ff] border-[#00f3ff] font-bold shadow-[0_0_8px_rgba(0,243,255,0.2)]'
+                          : 'bg-[#111728] text-gray-400 border-[#1f2b48] hover:text-white'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Cyber Evidence Polaroid Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-xs">
+              {(caseData.media || [])
+                .filter((item) => {
+                  // Search query filter
+                  if (mediaSearchQuery.trim()) {
+                    const q = mediaSearchQuery.toLowerCase();
+                    const matchesTitle = (item.title || '').toLowerCase().includes(q);
+                    const matchesDesc = (item.desc || '').toLowerCase().includes(q);
+                    const matchesTag = (item.tag || '').toLowerCase().includes(q);
+                    if (!matchesTitle && !matchesDesc && !matchesTag) return false;
+                  }
+                  // Category filter
+                  if (mediaCategoryFilter !== 'ALL') {
+                    const tag = (item.tag || '').toLowerCase();
+                    if (mediaCategoryFilter === 'crime_scene' && !tag.includes('мест') && !tag.includes('scene')) return false;
+                    if (mediaCategoryFilter === 'victim' && !tag.includes('тел') && !tag.includes('жертв') && !tag.includes('труп')) return false;
+                    if (mediaCategoryFilter === 'clue' && !tag.includes('улик') && !tag.includes('оруд') && !tag.includes('след')) return false;
+                    if (mediaCategoryFilter === 'alibi' && !tag.includes('алиб') && !tag.includes('свидетел')) return false;
+                  }
+                  return true;
+                })
+                .map((item, idx) => {
+                  const isEditing = editingMediaId === item.id;
+                  const imageSrc = item.customImageUrl || '';
+
+                  return (
+                    <div
+                      key={item.id || idx}
+                      className="cyber-panel bg-[#090d19] border border-[#1d2745] hover:border-[#00f3ff]/50 rounded-xl overflow-hidden shadow-lg transition-all duration-200 flex flex-col justify-between group"
+                    >
+                      {/* Image Preview Thumbnail with Badges */}
+                      <div className="relative h-44 bg-[#050810] flex items-center justify-center overflow-hidden border-b border-[#18223c]">
+                        {imageSrc ? (
+                          <img
+                            src={imageSrc}
+                            alt={item.title || 'Улика'}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+                            onClick={() => {
+                              setViewingMediaUrl(imageSrc);
+                              setViewingMediaTitle(item.title);
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center p-4 text-center text-gray-500 space-y-1">
+                            <ImageIcon size={32} className="text-[#00f3ff]/50 mb-1" />
+                            <span className="text-[11px] font-bold text-gray-400">{item.title || 'Схематичный снимок'}</span>
+                            <span className="text-[10px] text-gray-600">SVG: {item.svgType || 'corpse_trap'}</span>
+                          </div>
+                        )}
+
+                        {/* Top Badges (Category & Time) */}
+                        <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
+                          <span className="bg-black/80 backdrop-blur-sm text-[#00f3ff] text-[10px] px-2 py-0.5 rounded border border-[#00f3ff]/40 font-bold shadow">
+                            🏷️ {item.tag || 'Улика'}
+                          </span>
+                        </div>
+
+                        <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+                          <span className="bg-black/80 backdrop-blur-sm text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-500/40 font-bold shadow">
+                            ⏱️ {item.time || '21:40'}
+                          </span>
+                        </div>
+
+                        {/* Lightbox Trigger on Hover */}
+                        {imageSrc && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setViewingMediaUrl(imageSrc);
+                              setViewingMediaTitle(item.title);
+                            }}
+                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-cyber font-bold gap-1.5 backdrop-blur-[2px]"
+                            title="Открыть полноразмерное изображение"
+                          >
+                            <Eye size={16} className="text-[#00f3ff]" />
+                            <span>ПРОСМОТР</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Card Content Details */}
+                      <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-cyber font-bold text-white text-sm group-hover:text-[#00f3ff] transition-colors line-clamp-1">
+                              {item.title || 'Снимок места преступления'}
+                            </h4>
+                            <span className="text-[10px] text-gray-500 uppercase shrink-0">
+                              #{item.code || item.id}
+                            </span>
+                          </div>
+
+                          <div className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
+                            <Camera size={12} className="text-gray-500" />
+                            <span>{item.camera || 'GMod Снимок'}</span>
+                          </div>
+
+                          {/* Nagito's Quote / Observation */}
+                          <div className="mt-2 p-2 bg-[#05070f] border border-[#162035] rounded text-gray-300 text-[11px] italic leading-relaxed">
+                            {item.desc || '«Возможно, этот снимок послужит решающей зацепкой на суде?...»'}
+                          </div>
+                        </div>
+
+                        {/* Card Action Buttons */}
+                        <div className="pt-2 border-t border-[#162035] flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingMediaId(isEditing ? null : item.id)}
+                            className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors ${
+                              isEditing
+                                ? 'bg-[#00f3ff]/20 text-[#00f3ff] border border-[#00f3ff] font-bold'
+                                : 'bg-[#121829] text-gray-300 hover:text-white border border-[#202b48] hover:border-[#00f3ff]'
+                            }`}
+                          >
+                            <Edit3 size={12} />
+                            <span>{isEditing ? 'Скрыть редактор' : 'Редактировать'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (window.confirm(`Удалить снимок «${item.title || item.id}»?`)) {
+                                SoundFX.playClick();
+                                await fetch(`/api/admin/media/${item.id}`, {
+                                  method: 'DELETE',
+                                  headers: { 'x-admin-token': authToken }
+                                });
+                                loadAllAdminData();
+                                showSuccess('Снимок удален!');
+                              }
+                            }}
+                            className="p-1.5 text-gray-500 hover:text-red-400 rounded hover:bg-red-500/10 transition-colors"
+                            title="Удалить фотоматериал"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Inline Card Editor Accordion */}
+                      {isEditing && (
+                        <div className="p-4 bg-[#060914] border-t border-[#00f3ff]/30 space-y-3 animate-fade-in text-xs font-mono">
+                          <div className="text-[11px] font-bold text-[#00f3ff] flex items-center gap-1 border-b border-[#1a2542] pb-1.5">
+                            <Edit3 size={13} />
+                            <span>РЕДАКТИРОВАНИЕ ДАННЫХ СНИМКА:</span>
+                          </div>
+
+                          <div>
+                            <label className="text-gray-400 block mb-1">ЗАГОЛОВОК СНИМКА:</label>
+                            <input
+                              type="text"
+                              value={item.title || ''}
+                              onChange={(e) => {
+                                const updated = [...caseData.media];
+                                updated[idx].title = e.target.value;
+                                setCaseData({ ...caseData, media: updated });
+                              }}
+                              className="dr-input py-1 text-xs text-white"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-gray-400 block mb-1">ВРЕМЯ:</label>
+                              <input
+                                type="text"
+                                value={item.time || ''}
+                                onChange={(e) => {
+                                  const updated = [...caseData.media];
+                                  updated[idx].time = e.target.value;
+                                  setCaseData({ ...caseData, media: updated });
+                                }}
+                                className="dr-input py-1 text-xs text-amber-300"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-gray-400 block mb-1">КАТЕГОРИЯ / ТЕГ:</label>
+                              <input
+                                type="text"
+                                value={item.tag || ''}
+                                onChange={(e) => {
+                                  const updated = [...caseData.media];
+                                  updated[idx].tag = e.target.value;
+                                  setCaseData({ ...caseData, media: updated });
+                                }}
+                                className="dr-input py-1 text-xs text-[#00ff88]"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-gray-400 block mb-1">ИСТОЧНИК / КАМЕРА:</label>
+                            <input
+                              type="text"
+                              value={item.camera || ''}
+                              onChange={(e) => {
+                                const updated = [...caseData.media];
+                                updated[idx].camera = e.target.value;
+                                setCaseData({ ...caseData, media: updated });
+                              }}
+                              className="dr-input py-1 text-xs"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-gray-400 block mb-1">URL СКРИНШОТА GMOD (ИЛИ BASE64):</label>
+                            <input
+                              type="text"
+                              value={item.customImageUrl || ''}
+                              placeholder="https://... или /img/..."
+                              onChange={(e) => {
+                                const updated = [...caseData.media];
+                                updated[idx].customImageUrl = e.target.value;
+                                setCaseData({ ...caseData, media: updated });
+                              }}
+                              className="dr-input py-1 text-xs text-blue-300"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-gray-400 block mb-1">ЗАМЕТКА НАГИТО / ПОЯСНЕНИЕ:</label>
+                            <textarea
+                              rows={2}
+                              value={item.desc || ''}
+                              onChange={(e) => {
+                                const updated = [...caseData.media];
+                                updated[idx].desc = e.target.value;
+                                setCaseData({ ...caseData, media: updated });
+                              }}
+                              className="dr-input py-1 text-xs resize-none"
+                            />
+                          </div>
+
+                          <div className="flex justify-end gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => setEditingMediaId(null)}
+                              className="dr-btn py-1 px-3 text-xs text-gray-400 hover:text-white"
+                            >
+                              Закрыть
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                SoundFX.playClick();
+                                await fetch(`/api/admin/media/${item.id}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
+                                  body: JSON.stringify(item)
+                                });
+                                showSuccess('Снимок успешно сохранен!');
+                                setEditingMediaId(null);
+                              }}
+                              className="dr-btn dr-btn-primary py-1 px-3 text-xs font-cyber font-bold"
+                            >
+                              Сохранить изменения
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+
+            {/* Empty State */}
+            {(caseData.media || []).length === 0 && (
+              <div className="p-8 bg-[#0a0d17] border border-dashed border-[#233156] rounded-xl text-center space-y-3">
+                <ImageIcon size={40} className="mx-auto text-gray-600" />
+                <h4 className="text-white font-cyber font-bold text-sm">В ФОТОАРХИВЕ ПОКА НЕТ СНИМКОВ</h4>
+                <p className="text-xs font-mono text-gray-400 max-w-md mx-auto">
+                  Нажмите <kbd className="bg-[#12192e] text-[#00f3ff] px-2 py-0.5 rounded border border-[#23335e]">Ctrl + V</kbd> в любом месте или используйте блок быстрой загрузки выше, чтобы прикрепить скриншоты из Garry's Mod.
+                </p>
+              </div>
+            )}
+
+            {/* Fullscreen Evidence Lightbox Modal */}
+            {viewingMediaUrl && (
+              <div
+                className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+                onClick={() => setViewingMediaUrl(null)}
+              >
+                <div
+                  className="max-w-5xl w-full bg-[#0b0f1d] border-2 border-[#00f3ff] rounded-xl overflow-hidden shadow-[0_0_50px_rgba(0,243,255,0.3)] space-y-3 p-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between border-b border-[#1b2540] pb-3">
+                    <div className="flex items-center gap-2 text-white font-cyber font-bold text-sm">
+                      <ImageIcon size={18} className="text-[#00f3ff]" />
+                      <span>{viewingMediaTitle || 'ПРОСМОТР ФОТОСВИДЕТЕЛЬСТВА'}</span>
+                    </div>
+                    <button
+                      onClick={() => setViewingMediaUrl(null)}
+                      className="text-gray-400 hover:text-white font-mono text-xs px-2.5 py-1 rounded bg-[#131b2e] border border-[#233256] hover:border-[#00f3ff]"
+                    >
+                      ✕ ЗАКРЫТЬ
+                    </button>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                    <div>
-                      <label className="text-gray-500 block mb-1">КОД ФАЙЛА:</label>
-                      <input
-                        type="text"
-                        value={item.code}
-                        onChange={(e) => {
-                          const updated = [...caseData.media];
-                          updated[idx].code = e.target.value;
-                          setCaseData({ ...caseData, media: updated });
-                        }}
-                        className="dr-input py-1 text-xs font-bold text-[#00f3ff]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-gray-500 block mb-1">ЗАГОЛОВОК СНИМКА:</label>
-                      <input
-                        type="text"
-                        value={item.title}
-                        onChange={(e) => {
-                          const updated = [...caseData.media];
-                          updated[idx].title = e.target.value;
-                          setCaseData({ ...caseData, media: updated });
-                        }}
-                        className="dr-input py-1 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-gray-500 block mb-1">ВРЕМЯ СЪЁМКИ:</label>
-                      <input
-                        type="text"
-                        value={item.time}
-                        onChange={(e) => {
-                          const updated = [...caseData.media];
-                          updated[idx].time = e.target.value;
-                          setCaseData({ ...caseData, media: updated });
-                        }}
-                        className="dr-input py-1 text-xs text-amber-300"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-gray-500 block mb-1">ИСТОЧНИК / КАМЕРА:</label>
-                      <input
-                        type="text"
-                        value={item.camera}
-                        onChange={(e) => {
-                          const updated = [...caseData.media];
-                          updated[idx].camera = e.target.value;
-                          setCaseData({ ...caseData, media: updated });
-                        }}
-                        className="dr-input py-1 text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-gray-500 block mb-1">ТЕГ / КАТЕГОРИЯ:</label>
-                      <input
-                        type="text"
-                        value={item.tag}
-                        onChange={(e) => {
-                          const updated = [...caseData.media];
-                          updated[idx].tag = e.target.value;
-                          setCaseData({ ...caseData, media: updated });
-                        }}
-                        className="dr-input py-1 text-xs text-[#00ff88]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-gray-500 block mb-1">ВЕКТОРНАЯ ЗАГЛУШКА (SVG):</label>
-                      <select
-                        value={item.svgType || 'corpse_trap'}
-                        onChange={(e) => {
-                          const updated = [...caseData.media];
-                          updated[idx].svgType = e.target.value;
-                          setCaseData({ ...caseData, media: updated });
-                        }}
-                        className="dr-input py-1 text-xs bg-[#090c15]"
-                      >
-                        <option value="corpse_trap">Труп жертвы с капканом</option>
-                        <option value="handover_spot">Место передачи капкана (угол склада)</option>
-                        <option value="trap_fibers">Макросъёмка: Волокна на зубьях</option>
-                        <option value="empty_shelf">Пустая полка в мастерской</option>
-                        <option value="security_cam">Общий план камеры</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-gray-500 block mb-1">
-                        URL СКРИНШОТА GMOD (ПО ЖЕЛАНИЮ):
-                      </label>
-                      <input
-                        type="text"
-                        value={item.customImageUrl || ''}
-                        placeholder="https://... или /img/..."
-                        onChange={(e) => {
-                          const updated = [...caseData.media];
-                          updated[idx].customImageUrl = e.target.value;
-                          setCaseData({ ...caseData, media: updated });
-                        }}
-                        className="dr-input py-1 text-xs text-blue-300"
-                      />
-                    </div>
-                  </div>
-
-                  {item.customImageUrl && (
-                    <div className="p-2 bg-[#05070e] border border-blue-900/40 rounded flex items-center gap-3">
-                      <img
-                        src={item.customImageUrl}
-                        alt="Предпросмотр"
-                        className="w-16 h-12 object-cover rounded border border-gray-700"
-                        onError={(e) => { e.target.style.display = 'none'; }}
-                      />
-                      <span className="text-[11px] text-gray-400">
-                        Предпросмотр скриншота активен. Игроки увидят эту фотографию вместо SVG-схемы.
-                      </span>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="text-gray-500 block mb-1">
-                      ОПИСАНИЕ ИЛИ ВОПРОС НАГИТО (ПРИМЕР: «Возможно, в этом месте был передан капкан?...»):
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={item.desc}
-                      onChange={(e) => {
-                        const updated = [...caseData.media];
-                        updated[idx].desc = e.target.value;
-                        setCaseData({ ...caseData, media: updated });
-                      }}
-                      className="dr-input py-1 text-xs"
+                  <div className="flex items-center justify-center max-h-[75vh] overflow-hidden bg-black/80 rounded-lg p-2">
+                    <img
+                      src={viewingMediaUrl}
+                      alt={viewingMediaTitle}
+                      className="max-h-[72vh] max-w-full object-contain rounded shadow-2xl"
                     />
                   </div>
-
-                  <div className="flex justify-end gap-2 pt-1">
-                    <button
-                      onClick={async () => {
-                        SoundFX.playClick();
-                        await fetch(`/api/admin/media/${item.id}`, {
-                          method: 'PUT',
-                          headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
-                          body: JSON.stringify(item)
-                        });
-                        showSuccess('Снимок сохранен!');
-                      }}
-                      className="dr-btn py-1 px-3 text-xs"
-                    >
-                      Сохранить
-                    </button>
-                    <button
-                      onClick={async () => {
-                        SoundFX.playClick();
-                        await fetch(`/api/admin/media/${item.id}`, {
-                          method: 'DELETE',
-                          headers: { 'x-admin-token': authToken }
-                        });
-                        loadAllAdminData();
-                      }}
-                      className="dr-btn py-1 px-2 text-xs text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -2215,29 +2467,46 @@ export default function AdminDashboard({ onClose }) {
                   (suspect.maskedRole || '').toLowerCase().includes(q)
                 );
               }).map((suspect, idx) => {
+                const matchingChar = DANGANRONPA_CHARACTERS.find(c => c.name === suspect.realName || c.name === suspect.maskedName);
                 const isCurrentKiller = caseData.killerFullName === suspect.realName || caseData.killer === suspect.realName?.split(' ')[0].toUpperCase();
                 const isCurrentVictim = caseData.victim?.includes(suspect.realName);
 
                 return (
-                <div key={suspect.id || idx} className="p-4 bg-[#0a0d16] border border-[#1b233a] rounded space-y-3">
-                  <div className="flex flex-wrap justify-between items-center border-b border-gray-800 pb-2 gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-cyber font-bold text-[#00f3ff] text-sm">
-                        #{suspect.id} {suspect.realName}
-                      </span>
-                      <span className="text-gray-400 text-xs">
-                        ({suspect.realRole})
-                      </span>
-                      {isCurrentKiller && (
-                        <span className="text-[10px] font-bold text-white bg-[#ff2a85] px-2 py-0.5 rounded shadow-[0_0_8px_rgba(255,42,133,0.5)]">
-                          👑 ЗАЧЕРНЁННЫЙ
-                        </span>
+                <div key={suspect.id || idx} className="p-4 bg-[#0a0d16] border border-[#1b233a] hover:border-[#00f3ff]/40 rounded-xl space-y-3 transition-colors shadow-md">
+                  <div className="flex flex-wrap justify-between items-center border-b border-gray-800 pb-2.5 gap-2">
+                    <div className="flex items-center gap-3">
+                      {matchingChar?.avatarUrl ? (
+                        <img
+                          src={matchingChar.avatarUrl}
+                          alt={suspect.realName}
+                          className="w-11 h-11 rounded-full object-cover border-2 border-[#00f3ff] shadow-[0_0_10px_rgba(0,243,255,0.35)] shrink-0"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-full bg-[#151c30] border border-[#263556] flex items-center justify-center text-gray-400 font-bold shrink-0">
+                          {suspect.realName?.[0] || '?'}
+                        </div>
                       )}
-                      {isCurrentVictim && (
-                        <span className="text-[10px] font-bold text-black bg-[#00f3ff] px-2 py-0.5 rounded shadow-[0_0_8px_rgba(0,243,255,0.5)]">
-                          💀 ЖЕРТВА
-                        </span>
-                      )}
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-cyber font-bold text-[#00f3ff] text-sm">
+                            #{suspect.id} {suspect.realName}
+                          </span>
+                          {isCurrentKiller && (
+                            <span className="text-[10px] font-bold text-white bg-[#ff2a85] px-2 py-0.5 rounded shadow-[0_0_8px_rgba(255,42,133,0.5)]">
+                              👑 ЗАЧЕРНЁННЫЙ
+                            </span>
+                          )}
+                          {isCurrentVictim && (
+                            <span className="text-[10px] font-bold text-black bg-[#00f3ff] px-2 py-0.5 rounded shadow-[0_0_8px_rgba(0,243,255,0.5)]">
+                              💀 ЖЕРТВА
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-gray-400 text-xs">
+                          {suspect.realRole} {matchingChar?.game ? `• ${matchingChar.game}` : ''}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1.5">
@@ -2424,6 +2693,28 @@ export default function AdminDashboard({ onClose }) {
         {/* Tab: Debate Constructor */}
         {activeTab === 'debate' && caseData && (
           <div className="space-y-6">
+            {/* Explanatory Banner for Garry's Mod Roleplayers */}
+            <div className="p-4 bg-[#0a1426] border border-[#00f3ff]/40 rounded-lg flex items-start gap-3 shadow-[0_0_20px_rgba(0,243,255,0.1)] font-mono">
+              <div className="p-2 bg-[#00f3ff]/15 rounded text-[#00f3ff] mt-0.5 shrink-0">
+                <MessageSquare size={18} />
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="font-cyber font-bold text-white text-sm flex flex-wrap items-center gap-2">
+                  <span>КОНСТРУКТОР ДЕБАТОВ // NON-STOP DEBATE (ARG-РЕЖИМ)</span>
+                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold">
+                    ⚖️ Не требуется для Garry's Mod
+                  </span>
+                </div>
+                <p className="text-gray-300 leading-relaxed">
+                  <strong>Зачем нужна эта вкладка?</strong> На сайте есть интерактивная ARG-мини-игра со стрельбой «Пулями Правды» по летящим аргументам подозреваемого в реальном времени.
+                </p>
+                <div className="p-2.5 bg-[#060a14] rounded border border-[#1b2848] text-gray-400 space-y-1">
+                  <div>• <strong>Если ваш классный суд проходит в Garry's Mod (Shinri Trial):</strong> эту вкладку настраивать <span className="text-amber-400 font-bold">НЕ нужно</span>! Игроки расследуют дело голосом на сервере, а сайт используют как терминал улик, досье и фотоархива (вкладки <strong>«Параметры Дела»</strong>, <strong>«Ученики»</strong> и <strong>«Фотоархив»</strong>).</div>
+                  <div>• <strong>Если вы хотите устроить интерактивный мини-суд на сайте:</strong> выберите один из быстрых шаблонов ниже или настройте уязвимые фразы вручную.</div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#222c4a] pb-4">
               <div>
                 <div className="flex items-center gap-2">
@@ -3128,6 +3419,8 @@ export default function AdminDashboard({ onClose }) {
             </div>
           </div>
         )}
+
+        </AdminTabErrorBoundary>
 
         {/* Reset Confirmation Modal */}
         {isResetModalOpen && (
