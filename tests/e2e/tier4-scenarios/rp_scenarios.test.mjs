@@ -44,7 +44,7 @@ describe('Tier 4: Real-World RP Application Scenarios (End-to-End)', () => {
     // 4. Dossier Decryption: Decode Suspect #03 (Kirumi Tojo) via Monopad ticket AR-883
     const unlockRes = await client.unlockSuspect('03', 'AR-883');
     assert.equal(unlockRes.status, 200);
-    assert.equal(unlockRes.data.realName, 'Кируми Тодзё');
+    assert.match(unlockRes.data.realName, /Кируми Тодж[оеё]/);
 
     // 5. Non-Stop Debate: Confront false alibi with intercepted CHAT_01
     const debateRes = await client.fireDebateBullet({

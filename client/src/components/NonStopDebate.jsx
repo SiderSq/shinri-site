@@ -17,7 +17,7 @@ import { SoundFX } from './SoundFX';
 const DEFAULT_STATEMENTS = [
   {
     id: 'STMT_01',
-    speaker: 'Кируми Тодзё',
+    speaker: 'Кируми Тоджо',
     role: 'Абсолютная Горничная',
     text: 'В 21:00 я закончила протирать серверные стойки и подготовила зал к утренней инспекции.',
     speed: 'normal',
@@ -33,7 +33,7 @@ const DEFAULT_STATEMENTS = [
   },
   {
     id: 'STMT_02',
-    speaker: 'Кируми Тодзё',
+    speaker: 'Кируми Тоджо',
     role: 'Абсолютная Горничная',
     text: 'Питание отключилось только после моего ухода, и я покинула сектор C до 21:03!',
     speed: 'fast',
@@ -49,7 +49,7 @@ const DEFAULT_STATEMENTS = [
   },
   {
     id: 'STMT_03',
-    speaker: 'Кируми Тодзё',
+    speaker: 'Кируми Тоджо',
     role: 'Абсолютная Горничная',
     text: 'У меня не было никаких причин задерживаться в архиве или искать встречи с Бьякуей.',
     speed: 'normal',
@@ -57,7 +57,7 @@ const DEFAULT_STATEMENTS = [
   },
   {
     id: 'STMT_04',
-    speaker: 'Кируми Тодзё',
+    speaker: 'Кируми Тоджо',
     role: 'Абсолютная Горничная',
     text: 'Камеры отключились из-за аварийного скачка напряжения, я не имею к этому отношения!',
     speed: 'fast',
@@ -73,7 +73,7 @@ const DEFAULT_STATEMENTS = [
   },
   {
     id: 'STMT_05',
-    speaker: 'Кируми Тодзё',
+    speaker: 'Кируми Тоджо',
     role: 'Абсолютная Горничная',
     text: 'Никаких следов моего присутствия в архивной комнате после девяти вечера нет!',
     speed: 'normal',
@@ -797,7 +797,7 @@ export default function NonStopDebate({ caseData, onDebateResolved }) {
                 <CheckCircle2 size={32} />
               </div>
               <h3 className="text-lg font-bold text-white font-mono tracking-wider">
-                ЛОЖНОЕ АЛИБИ КИРУМИ ТОДЗЁ ОПРОВЕРГНУТО!
+                ЛОЖНОЕ АЛИБИ ОПРОВЕРГНУТО!
               </h3>
               <p className="text-xs font-mono text-gray-300 leading-relaxed bg-[#121a30] p-3 rounded border border-[#233257]">
                 {truthBreakData.counterStatement}

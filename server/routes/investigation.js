@@ -411,8 +411,7 @@ router.post('/verify-killer', (req, res) => {
     aliases.includes(submitted) ||
     (target && norm(submitted) === norm(target)) ||
     (killerFullName && norm(submitted) === norm(killerFullName)) ||
-    aliases.some(a => norm(submitted) === norm(a)) ||
-    (target === 'КИРУМИ' && (submitted === 'КИРА' || submitted === 'КИРУМИ ТОДЗЁ' || submitted === 'КИРУМИ ТОДЗЕ')) ||
+    (target === 'КИРУМИ' && (submitted === 'КИРА' || submitted === 'КИРУМИ ТОДЖО' || submitted === 'ТОДЖО' || submitted === 'КИРУМИ ТОДЗЁ' || submitted === 'КИРУМИ ТОДЗЕ')) ||
     (target === 'КИРА' && submitted === 'КИРУМИ');
 
   if (isMatch) {
@@ -716,7 +715,7 @@ router.post('/verdict-certificate', (req, res) => {
   const suspectCode = isKirumi ? 'KIRUMI' : (killerTarget === 'КИРУМИ' ? 'KIRUMI' : (killerTarget ? killerTarget.replace(/[^A-Z0-9А-ЯЁ]/gi, '').substring(0, 6).toUpperCase() : 'CULPRIT'));
   const verdictCode = `ST-${caseId}-${suspectCode}-${shortHash}-${year}`;
 
-  const suspectName = foundSuspect?.realName || caseData.killerFullName || (isKirumi ? 'КИРУМИ ТОДЗЁ' : (caseData.killer || 'ПОДОЗРЕВАЕМЫЙ'));
+  const suspectName = foundSuspect?.realName || caseData.killerFullName || (isKirumi ? 'КИРУМИ ТОДЖО' : (caseData.killer || 'ПОДОЗРЕВАЕМЫЙ'));
   const suspectRole = foundSuspect?.realRole || (isKirumi ? 'Абсолютная Горничная' : (caseData.killerRole || 'Ученик Академии'));
 
   // Discord report formatted in Discord Markdown / ANSI codeblocks

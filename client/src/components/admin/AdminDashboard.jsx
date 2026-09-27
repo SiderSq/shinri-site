@@ -22,9 +22,21 @@ import {
   Upload,
   Camera,
   RotateCcw,
-  UserCheck
+  UserCheck,
+  UserPlus,
+  Sparkles,
+  CheckSquare,
+  Square,
+  Zap,
+  Search,
+  Filter,
+  Flame,
+  Check,
+  ChevronRight
 } from 'lucide-react';
 import { SoundFX } from '../SoundFX';
+import { DANGANRONPA_CHARACTERS, createSuspectFromCharacter } from '../../data/characters';
+import { DEBATE_TEMPLATES } from '../../data/debateTemplates';
 
 export default function AdminDashboard({ onClose }) {
   const [authToken, setAuthToken] = useState(localStorage.getItem('shinri_admin_token') || '');
@@ -45,6 +57,15 @@ export default function AdminDashboard({ onClose }) {
   // Reset Game Session Modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
+  // Quick Character Import Modal State
+  const [isCharImportModalOpen, setIsCharImportModalOpen] = useState(false);
+  const [selectedCharIds, setSelectedCharIds] = useState([]);
+  const [charFilterGame, setCharFilterGame] = useState('ALL');
+  const [charSearchQuery, setCharSearchQuery] = useState('');
+  const [selectedVictimCharId, setSelectedVictimCharId] = useState('');
+  const [selectedKillerCharId, setSelectedKillerCharId] = useState('');
+  const [isImportingRoster, setIsImportingRoster] = useState(false);
 
   // GMod Screenshot Upload State
   const [uploadFile, setUploadFile] = useState(null);
@@ -336,6 +357,270 @@ export default function AdminDashboard({ onClose }) {
     }
   };
 
+  // --- Quick Character Import Handlers ---
+  const handleToggleCharSelect = (charId) => {
+    SoundFX.playClick();
+    setSelectedCharIds(prev =>
+      prev.includes(charId) ? prev.filter(id => id !== charId) : [...prev, charId]
+    );
+  };
+
+  const handleSelectGameGroup = (game) => {
+    SoundFX.playClick();
+    const gameCharIds = DANGANRONPA_CHARACTERS.filter(c => c.game === game).map(c => c.id);
+    setSelectedCharIds(prev => {
+      const allSelected = gameCharIds.every(id => prev.includes(id));
+      if (allSelected) {
+        return prev.filter(id => !gameCharIds.includes(id));
+      } else {
+        return Array.from(new Set([...prev, ...gameCharIds]));
+      }
+    });
+  };
+
+  const handleClearCharSelect = () => {
+    SoundFX.playClick();
+    setSelectedCharIds([]);
+    setSelectedVictimCharId('');
+    setSelectedKillerCharId('');
+  };
+
+  const handleApplyCharacterImport = async () => {
+    if (selectedCharIds.length === 0) {
+      showError('Выберите хотя бы одного персонажа для импорта!');
+      return;
+    }
+
+    setIsImportingRoster(true);
+    try {
+      const selectedChars = DANGANRONPA_CHARACTERS.filter(c => selectedCharIds.includes(c.id));
+
+      const newSuspects = selectedChars.map((char, index) => {
+        const isVictim = char.id === selectedVictimCharId;
+        const isCulprit = char.id === selectedKillerCharId;
+        return createSuspectFromCharacter(char, index, isVictim, isCulprit);
+      });
+
+      const victimChar = selectedChars.find(c => c.id === selectedVictimCharId);
+      const killerChar = selectedChars.find(c => c.id === selectedKillerCharId);
+
+      const caseUpdates = {};
+      if (victimChar) {
+        caseUpdates.victim = `${victimChar.name} [${victimChar.role}]`;
+      }
+      if (killerChar) {
+        const mainShortName = (killerChar.aliases && killerChar.aliases[0]) || killerChar.name.split(' ')[0].toUpperCase();
+        caseUpdates.killer = mainShortName;
+        caseUpdates.killerFullName = killerChar.name;
+        caseUpdates.killerRole = killerChar.role;
+      }
+
+      await fetch('/api/admin/suspects', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
+        body: JSON.stringify({ suspects: newSuspects })
+      });
+
+      if (Object.keys(caseUpdates).length > 0) {
+        await fetch('/api/admin/case', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
+          body: JSON.stringify(caseUpdates)
+        });
+      }
+
+      SoundFX.playAccessGranted();
+      showSuccess(`Успешно импортировано ${newSuspects.length} персонажей в текущую судебную сессию!`);
+      loadAllAdminData();
+      setIsCharImportModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      SoundFX.playAccessDenied();
+      showError('Ошибка при импорте персонажей.');
+    } finally {
+      setIsImportingRoster(false);
+    }
+  };
+
+  const handleSetSuspectKiller = async (suspect) => {
+    SoundFX.playClick();
+    try {
+      const shortName = (suspect.puzzle?.answers && suspect.puzzle.answers[0]) || suspect.realName.split(' ')[0].toUpperCase();
+      const res = await fetch('/api/admin/case', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
+        body: JSON.stringify({
+          killer: shortName,
+          killerFullName: suspect.realName,
+          killerRole: suspect.realRole
+        })
+      });
+      if (res.ok) {
+        SoundFX.playAccessGranted();
+        showSuccess(`Зачернённым (убийцей) назначен: ${suspect.realName}`);
+        loadAllAdminData();
+      }
+    } catch (err) {
+      showError('Ошибка назначения зачернённого.');
+    }
+  };
+
+  const handleSetSuspectVictim = async (suspect) => {
+    SoundFX.playClick();
+    try {
+      const res = await fetch('/api/admin/case', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
+        body: JSON.stringify({
+          victim: `${suspect.realName} [${suspect.realRole}]`
+        })
+      });
+      if (res.ok) {
+        SoundFX.playAccessGranted();
+        showSuccess(`Жертвой дела назначен(а): ${suspect.realName}`);
+        loadAllAdminData();
+      }
+    } catch (err) {
+      showError('Ошибка назначения жертвы.');
+    }
+  };
+
+  // --- Debate Constructor Handlers ---
+  const handleSaveDebate = async () => {
+    if (!caseData?.debate) return;
+    SoundFX.playClick();
+    try {
+      const res = await fetch('/api/admin/debate', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
+        body: JSON.stringify({ debate: caseData.debate })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        SoundFX.playAccessGranted();
+        showSuccess('Конфигурация дебатов успешно сохранена!');
+        loadAllAdminData();
+      } else {
+        SoundFX.playAccessDenied();
+        showError(data.error || 'Ошибка при сохранении дебатов.');
+      }
+    } catch (err) {
+      SoundFX.playAccessDenied();
+      showError('Сетевая ошибка при сохранении дебатов.');
+    }
+  };
+
+  const handleApplyDebateTemplate = (template) => {
+    SoundFX.playClick();
+    const culpritSuspect = (caseData.suspects || []).find(s => s.isCulprit || s.realName?.toUpperCase() === caseData.killerFullName?.toUpperCase()) || (caseData.suspects || [])[0];
+    const speakerName = culpritSuspect?.realName || 'Подозреваемый';
+    const speakerRole = culpritSuspect?.realRole || 'Ученик Академии';
+
+    const newStatements = template.generateStatements(speakerName, speakerRole);
+    const newBullets = template.bullets;
+    const TT_KEY = ['truth', 'Table'].join('');
+    const newRules = [template.truthRule];
+
+    setCaseData({
+      ...caseData,
+      debate: {
+        ...(caseData.debate || {}),
+        topic: template.topic,
+        interrogationTitle: template.interrogationTitle,
+        statements: newStatements,
+        bullets: newBullets,
+        [TT_KEY]: newRules
+      }
+    });
+    showSuccess(`Применён шаблон дебатов: «${template.name}» (Спикер: ${speakerName})`);
+  };
+
+  const handleAddStatement = () => {
+    SoundFX.playClick();
+    const currentStatements = caseData.debate?.statements || [];
+    const newId = `STMT_${String(currentStatements.length + 1).padStart(2, '0')}`;
+    const firstSuspect = (caseData.suspects || [])[0];
+    const newStmt = {
+      id: newId,
+      speaker: firstSuspect?.realName || 'Подозреваемый',
+      role: firstSuspect?.realRole || 'Ученик Академии',
+      text: 'Я настаиваю на том, что мои показания абсолютно правдивы!',
+      speed: 'normal',
+      trajectory: 'linear',
+      weakPoints: [
+        {
+          id: `WP_${String(currentStatements.length + 1).padStart(2, '0')}`,
+          phrase: 'абсолютно правдивы',
+          startIndex: 40,
+          endIndex: 58
+        }
+      ]
+    };
+    setCaseData({
+      ...caseData,
+      debate: {
+        ...(caseData.debate || {}),
+        statements: [...currentStatements, newStmt]
+      }
+    });
+  };
+
+  const handleDeleteStatement = (stmtId) => {
+    SoundFX.playClick();
+    const currentStatements = caseData.debate?.statements || [];
+    setCaseData({
+      ...caseData,
+      debate: {
+        ...(caseData.debate || {}),
+        statements: currentStatements.filter(s => s.id !== stmtId)
+      }
+    });
+  };
+
+  const handleAddBullet = () => {
+    SoundFX.playClick();
+    const currentBullets = caseData.debate?.bullets || [];
+    const newId = `BULLET_${String(currentBullets.length + 1).padStart(2, '0')}`;
+    const newBullet = {
+      id: newId,
+      code: newId,
+      title: 'Новая улика правды',
+      summary: 'Описание факта, опровергающего ложное показание.'
+    };
+    setCaseData({
+      ...caseData,
+      debate: {
+        ...(caseData.debate || {}),
+        bullets: [...currentBullets, newBullet]
+      }
+    });
+  };
+
+  const handleDeleteBullet = (bulletId) => {
+    SoundFX.playClick();
+    const currentBullets = caseData.debate?.bullets || [];
+    setCaseData({
+      ...caseData,
+      debate: {
+        ...(caseData.debate || {}),
+        bullets: currentBullets.filter(b => b.id !== bulletId)
+      }
+    });
+  };
+
+  // Admin tabs navigation
+  const adminTabs = [
+    { id: 'case', label: 'Параметры Дела', icon: Database },
+    { id: 'suspects', label: `Подозреваемые (${(caseData?.suspects || []).length})`, icon: Users },
+    { id: 'debate', label: 'Конструктор Дебатов', icon: MessageSquare },
+    { id: 'players', label: `Игроки (${playerSessions.length})`, icon: UserCheck, highlight: playerSessions.length > 0 },
+    { id: 'documents', label: 'Файл Монокумы', icon: FileText },
+    { id: 'media', label: 'Фото и Скриншоты', icon: ImageIcon },
+    { id: 'hints', label: 'Подсказки', icon: HelpCircle },
+    { id: 'locks', label: `Блокировки IP (${locks.length})`, icon: Unlock, highlight: locks.length > 0 },
+    { id: 'audit', label: 'Аудит', icon: Shield }
+  ];
+
   // If not logged in as Admin, show login screen
   if (!authToken) {
     return (
@@ -402,18 +687,6 @@ export default function AdminDashboard({ onClose }) {
       </div>
     );
   }
-
-  // Admin tabs navigation
-  const adminTabs = [
-    { id: 'case', label: 'Параметры Дела', icon: Database },
-    { id: 'players', label: `Игроки (${playerSessions.length})`, icon: UserCheck, highlight: playerSessions.length > 0 },
-    { id: 'documents', label: 'Файл Монокумы', icon: FileText },
-    { id: 'media', label: 'Фото и Скриншоты', icon: ImageIcon },
-    { id: 'suspects', label: 'Подозреваемые и Загадки', icon: Users },
-    { id: 'hints', label: 'Подсказки', icon: HelpCircle },
-    { id: 'locks', label: `Блокировки IP (${locks.length})`, icon: Unlock, highlight: locks.length > 0 },
-    { id: 'audit', label: 'Аудит', icon: Shield }
-  ];
 
   return (
     <div className="fixed inset-0 z-50 bg-[#070910] text-gray-200 overflow-y-auto">
@@ -1183,25 +1456,43 @@ export default function AdminDashboard({ onClose }) {
                   Настройка досье учеников: маскированные имена, таланты, алиби и загадки, открывающие их карточки.
                 </p>
               </div>
-              <button
-                onClick={async () => {
-                  SoundFX.playClick();
-                  await fetch('/api/admin/suspects', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
-                    body: JSON.stringify({ suspects: caseData.suspects })
-                  });
-                  showSuccess('Список подозреваемых и загадки сохранены!');
-                }}
-                className="dr-btn dr-btn-primary py-2 px-5 text-xs font-cyber flex items-center gap-1.5"
-              >
-                <Save size={14} />
-                <span>СОХРАНИТЬ ПОДОЗРЕВАЕМЫХ</span>
-              </button>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    SoundFX.playClick();
+                    setIsCharImportModalOpen(true);
+                  }}
+                  className="dr-btn py-2 px-4 text-xs font-cyber font-bold flex items-center gap-1.5 bg-[#14233a] border border-[#00f3ff] text-[#00f3ff] hover:bg-[#1a2f4e] shadow-[0_0_15px_rgba(0,243,255,0.2)]"
+                >
+                  <Sparkles size={14} className="text-[#00f3ff]" />
+                  <span>⚡ БЫСТРЫЙ ИМПОРТ ИЗ DANGANRONPA</span>
+                </button>
+
+                <button
+                  onClick={async () => {
+                    SoundFX.playClick();
+                    await fetch('/api/admin/suspects', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
+                      body: JSON.stringify({ suspects: caseData.suspects })
+                    });
+                    showSuccess('Список подозреваемых и загадки сохранены!');
+                  }}
+                  className="dr-btn dr-btn-primary py-2 px-4 text-xs font-cyber flex items-center gap-1.5"
+                >
+                  <Save size={14} />
+                  <span>СОХРАНИТЬ ПОДОЗРЕВАЕМЫХ</span>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4 font-mono text-xs">
-              {(caseData.suspects || []).map((suspect, idx) => (
+              {(caseData.suspects || []).map((suspect, idx) => {
+                const isCurrentKiller = caseData.killerFullName === suspect.realName || caseData.killer === suspect.realName?.split(' ')[0].toUpperCase();
+                const isCurrentVictim = caseData.victim?.includes(suspect.realName);
+
+                return (
                 <div key={suspect.id || idx} className="p-4 bg-[#0a0d16] border border-[#1b233a] rounded space-y-3">
                   <div className="flex flex-wrap justify-between items-center border-b border-gray-800 pb-2 gap-2">
                     <div className="flex items-center gap-2">
@@ -1211,10 +1502,55 @@ export default function AdminDashboard({ onClose }) {
                       <span className="text-gray-400 text-xs">
                         ({suspect.realRole})
                       </span>
+                      {isCurrentKiller && (
+                        <span className="text-[10px] font-bold text-white bg-[#ff2a85] px-2 py-0.5 rounded shadow-[0_0_8px_rgba(255,42,133,0.5)]">
+                          👑 ЗАЧЕРНЁННЫЙ
+                        </span>
+                      )}
+                      {isCurrentVictim && (
+                        <span className="text-[10px] font-bold text-black bg-[#00f3ff] px-2 py-0.5 rounded shadow-[0_0_8px_rgba(0,243,255,0.5)]">
+                          💀 ЖЕРТВА
+                        </span>
+                      )}
                     </div>
-                    <span className="text-[11px] font-bold text-[#ff2a85] bg-[#22101b] px-2 py-0.5 rounded border border-[#441a32]">
-                      {suspect.status}
-                    </span>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleSetSuspectKiller(suspect)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                          isCurrentKiller
+                            ? 'bg-[#ff2a85] text-white border-[#ff2a85]'
+                            : 'bg-[#22101b] text-[#ff2a85] border-[#441a32] hover:bg-[#ff2a85]/20'
+                        }`}
+                        title="Назначить убийцей (зачернённым)"
+                      >
+                        👑 {isCurrentKiller ? 'Убийца' : 'Сделать убийцей'}
+                      </button>
+
+                      <button
+                        onClick={() => handleSetSuspectVictim(suspect)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                          isCurrentVictim
+                            ? 'bg-[#00f3ff] text-black border-[#00f3ff]'
+                            : 'bg-[#0e172a] text-[#00f3ff] border-[#1e2d4a] hover:bg-[#00f3ff]/20'
+                        }`}
+                        title="Назначить жертвой"
+                      >
+                        💀 {isCurrentVictim ? 'Жертва' : 'Сделать жертвой'}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          SoundFX.playClick();
+                          const updated = caseData.suspects.filter((_, i) => i !== idx);
+                          setCaseData({ ...caseData, suspects: updated });
+                        }}
+                        className="p-1 text-red-400 hover:text-red-300 ml-1"
+                        title="Удалить из списка"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1353,7 +1689,453 @@ export default function AdminDashboard({ onClose }) {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Debate Constructor */}
+        {activeTab === 'debate' && caseData && (
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#222c4a] pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="text-[#ff2a85]" size={20} />
+                  <h2 className="font-cyber font-bold text-white text-base">
+                    КОНСТРУКТОР ДЕБАТОВ // NON-STOP DEBATE
+                  </h2>
+                </div>
+                <p className="text-xs font-mono text-gray-400 mt-1">
+                  Настройка реплик подозрения, слабых точек (Weak Points), пуль правды и правил разгрома лжи для классного суда.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSaveDebate}
+                className="dr-btn dr-btn-primary py-2 px-5 text-xs font-cyber flex items-center gap-2"
+              >
+                <Save size={14} />
+                <span>СОХРАНИТЬ ДЕБАТЫ</span>
+              </button>
+            </div>
+
+            {/* Quick Templates Section */}
+            <div className="p-4 bg-[#0a0f1e] border border-[#233256] rounded-lg space-y-3 font-mono">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#00f3ff]">
+                <Zap size={15} />
+                <span>БЫСТРЫЕ ШАБЛОНЫ СПОРА (ВЫБЕРИТЕ ДЛЯ МГНОВЕННОЙ НАСТРОЙКИ):</span>
+              </div>
+              <p className="text-[11px] text-gray-400">
+                Кликните по шаблону, чтобы мгновенно заполнить споры и пули правды для текущего подозреваемого:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {DEBATE_TEMPLATES.map(tpl => (
+                  <button
+                    key={tpl.id}
+                    onClick={() => handleApplyDebateTemplate(tpl)}
+                    className="p-3 bg-[#11192e] hover:bg-[#182442] border border-[#273860] hover:border-[#00f3ff] rounded text-left transition-all group"
+                  >
+                    <div className="font-bold text-xs text-white group-hover:text-[#00f3ff] mb-1">
+                      {tpl.name}
+                    </div>
+                    <div className="text-[10px] text-gray-400 leading-tight">
+                      {tpl.description}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Topic & Interrogation Title */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
+              <div>
+                <label className="text-gray-400 block mb-1">ТЕМА СПОРА В ШАПКЕ:</label>
+                <input
+                  type="text"
+                  value={caseData.debate?.topic || ''}
+                  onChange={(e) => setCaseData({
+                    ...caseData,
+                    debate: { ...(caseData.debate || {}), topic: e.target.value }
+                  })}
+                  className="dr-input py-1.5 text-xs text-cyan-300 font-bold"
+                  placeholder="СПОР ОБ АЛИБИ И ПЕРЕМЕЩЕНИЯХ // КЛАССНЫЙ СУД"
+                />
+              </div>
+              <div>
+                <label className="text-gray-400 block mb-1">ЗАГОЛОВОК ДОПРОСА:</label>
+                <input
+                  type="text"
+                  value={caseData.debate?.interrogationTitle || ''}
+                  onChange={(e) => setCaseData({
+                    ...caseData,
+                    debate: { ...(caseData.debate || {}), interrogationTitle: e.target.value }
+                  })}
+                  className="dr-input py-1.5 text-xs text-white"
+                  placeholder="ПЕРЕКРЁСТНЫЙ ДОПРОС: ПОКАЗАНИЯ ПОДОЗРЕВАЕМОГО"
+                />
+              </div>
+            </div>
+
+            {/* Statements List */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-mono font-bold text-[#ffb703] uppercase tracking-wider flex items-center gap-2">
+                  <span>РЕПЛИКИ В СУДЕБНОМ СПОРЕ ({(caseData.debate?.statements || []).length}):</span>
+                </h3>
+                <button
+                  onClick={handleAddStatement}
+                  className="dr-btn py-1 px-3 text-xs font-mono flex items-center gap-1.5 text-[#00f3ff] border-[#00f3ff]/40 hover:border-[#00f3ff]"
+                >
+                  <Plus size={13} />
+                  <span>ДОБАВИТЬ РЕПЛИКУ</span>
+                </button>
+              </div>
+
+              <div className="space-y-3 font-mono text-xs">
+                {(caseData.debate?.statements || []).map((stmt, sIdx) => {
+                  const hasWeakPoint = Boolean(stmt.weakPoints && stmt.weakPoints.length > 0 && stmt.weakPoints[0].phrase);
+                  const weakPhrase = hasWeakPoint ? stmt.weakPoints[0].phrase : '';
+                  const phraseInText = stmt.text && weakPhrase ? stmt.text.includes(weakPhrase) : false;
+
+                  return (
+                    <div key={stmt.id || sIdx} className="p-4 bg-[#0a0e1c] border border-[#202c48] rounded space-y-3">
+                      <div className="flex flex-wrap items-center justify-between border-b border-[#1b2540] pb-2 gap-2">
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-[#ff2a85] text-xs">#{sIdx + 1} [{stmt.id}]</span>
+
+                          {/* Speaker Selector */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400 text-[11px]">Говорящий:</span>
+                            <select
+                              value={stmt.speaker || ''}
+                              onChange={(e) => {
+                                const selectedName = e.target.value;
+                                const matchingSuspect = (caseData.suspects || []).find(s => s.realName === selectedName);
+                                const updated = [...caseData.debate.statements];
+                                updated[sIdx].speaker = selectedName;
+                                if (matchingSuspect) {
+                                  updated[sIdx].role = matchingSuspect.realRole;
+                                }
+                                setCaseData({
+                                  ...caseData,
+                                  debate: { ...caseData.debate, statements: updated }
+                                });
+                              }}
+                              className="bg-[#12192e] border border-[#2b395a] text-cyan-300 font-bold px-2 py-0.5 rounded text-xs"
+                            >
+                              <option value="">-- Выберите персонажа --</option>
+                              {(caseData.suspects || []).map(s => (
+                                <option key={s.id} value={s.realName}>
+                                  {s.realName} ({s.realRole})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400 text-[11px]">Скорость:</span>
+                          <select
+                            value={stmt.speed || 'normal'}
+                            onChange={(e) => {
+                              const updated = [...caseData.debate.statements];
+                              updated[sIdx].speed = e.target.value;
+                              setCaseData({
+                                ...caseData,
+                                debate: { ...caseData.debate, statements: updated }
+                              });
+                            }}
+                            className="bg-[#12192e] border border-[#2b395a] text-gray-300 px-2 py-0.5 rounded text-xs"
+                          >
+                            <option value="normal">Обычная</option>
+                            <option value="fast">Быстрая</option>
+                            <option value="slow">Медленная</option>
+                          </select>
+
+                          <span className="text-gray-400 text-[11px]">Траектория:</span>
+                          <select
+                            value={stmt.trajectory || 'linear'}
+                            onChange={(e) => {
+                              const updated = [...caseData.debate.statements];
+                              updated[sIdx].trajectory = e.target.value;
+                              setCaseData({
+                                ...caseData,
+                                debate: { ...caseData.debate, statements: updated }
+                              });
+                            }}
+                            className="bg-[#12192e] border border-[#2b395a] text-gray-300 px-2 py-0.5 rounded text-xs"
+                          >
+                            <option value="linear">Прямая</option>
+                            <option value="wave">Волна (Синусоида)</option>
+                            <option value="perspective">Перспектива 3D</option>
+                          </select>
+
+                          <button
+                            onClick={() => handleDeleteStatement(stmt.id)}
+                            className="p-1 text-red-400 hover:text-red-300 ml-2"
+                            title="Удалить реплику"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Statement Text */}
+                      <div>
+                        <label className="text-gray-400 block mb-1 text-[11px]">ТЕКСТ ВЫСКАЗЫВАНИЯ:</label>
+                        <textarea
+                          rows={2}
+                          value={stmt.text || ''}
+                          onChange={(e) => {
+                            const updated = [...caseData.debate.statements];
+                            updated[sIdx].text = e.target.value;
+                            if (updated[sIdx].weakPoints?.[0]?.phrase) {
+                              const p = updated[sIdx].weakPoints[0].phrase;
+                              const idx = e.target.value.indexOf(p);
+                              if (idx !== -1) {
+                                updated[sIdx].weakPoints[0].startIndex = idx;
+                                updated[sIdx].weakPoints[0].endIndex = idx + p.length;
+                              }
+                            }
+                            setCaseData({
+                              ...caseData,
+                              debate: { ...caseData.debate, statements: updated }
+                            });
+                          }}
+                          className="dr-input py-1.5 text-xs text-white"
+                        />
+                      </div>
+
+                      {/* Weak Point Configuration */}
+                      <div className="p-3 bg-[#070b16] border border-[#1b233a] rounded">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                          <label className="text-amber-400 font-bold text-[11px] flex items-center gap-1.5">
+                            <Crosshair size={13} />
+                            <span>УЯЗВИМАЯ ФРАЗА (WEAK POINT ДЛЯ ВЫСТРЕЛА):</span>
+                          </label>
+                          {weakPhrase && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${phraseInText ? 'bg-[#00ff88]/20 text-[#00ff88] border border-[#00ff88]/40' : 'bg-red-900/40 text-red-300 border border-red-500/40'}`}>
+                              {phraseInText ? '✓ Найдена в тексте' : '⚠ Фраза отсутствует в тексте!'}
+                            </span>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          value={weakPhrase}
+                          placeholder="Точная цитата из текста, куда игрок должен прицелиться (или оставьте пусто для обычной реплики)..."
+                          onChange={(e) => {
+                            const updated = [...caseData.debate.statements];
+                            const p = e.target.value;
+                            if (!p.trim()) {
+                              updated[sIdx].weakPoints = [];
+                            } else {
+                              const sId = updated[sIdx].id || `STMT_${sIdx + 1}`;
+                              const wpId = `WP_${String(sIdx + 1).padStart(2, '0')}`;
+                              const start = (updated[sIdx].text || '').indexOf(p);
+                              updated[sIdx].weakPoints = [{
+                                id: wpId,
+                                phrase: p,
+                                startIndex: start !== -1 ? start : 0,
+                                endIndex: start !== -1 ? start + p.length : p.length
+                              }];
+                            }
+                            setCaseData({
+                              ...caseData,
+                              debate: { ...caseData.debate, statements: updated }
+                            });
+                          }}
+                          className="dr-input py-1 text-xs text-amber-300"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Truth Bullets Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-mono font-bold text-[#00f3ff] uppercase tracking-wider flex items-center gap-2">
+                  <span>ПУЛИ ПРАВДЫ ДЛЯ БАРАБАНА ({(caseData.debate?.bullets || []).length}):</span>
+                </h3>
+                <button
+                  onClick={handleAddBullet}
+                  className="dr-btn py-1 px-3 text-xs font-mono flex items-center gap-1.5 text-[#00f3ff] border-[#00f3ff]/40 hover:border-[#00f3ff]"
+                >
+                  <Plus size={13} />
+                  <span>ДОБАВИТЬ ПУЛЮ</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs">
+                {(caseData.debate?.bullets || []).map((bullet, bIdx) => (
+                  <div key={bullet.id || bIdx} className="p-3 bg-[#0a0e1c] border border-[#202c48] rounded space-y-2">
+                    <div className="flex items-center justify-between border-b border-[#1b2540] pb-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#00f3ff] font-bold text-xs">#{bIdx + 1}</span>
+                        <input
+                          type="text"
+                          value={bullet.code || bullet.id || ''}
+                          onChange={(e) => {
+                            const updated = [...caseData.debate.bullets];
+                            updated[bIdx].code = e.target.value;
+                            updated[bIdx].id = e.target.value;
+                            setCaseData({
+                              ...caseData,
+                              debate: { ...caseData.debate, bullets: updated }
+                            });
+                          }}
+                          className="dr-input py-0.5 px-2 text-xs w-28 text-cyan-300 font-bold"
+                          placeholder="BULLET_01"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleDeleteBullet(bullet.id)}
+                        className="text-red-400 hover:text-red-300"
+                        title="Удалить пулю"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="text-gray-400 text-[10px] block mb-0.5">НАЗВАНИЕ УЛИКИ:</label>
+                      <input
+                        type="text"
+                        value={bullet.title || ''}
+                        onChange={(e) => {
+                          const updated = [...caseData.debate.bullets];
+                          updated[bIdx].title = e.target.value;
+                          setCaseData({
+                            ...caseData,
+                            debate: { ...caseData.debate, bullets: updated }
+                          });
+                        }}
+                        className="dr-input py-1 text-xs text-white"
+                        placeholder="Название улики..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-gray-400 text-[10px] block mb-0.5">СУТЬ ПРОТИВОРЕЧИЯ (ОПИСАНИЕ):</label>
+                      <textarea
+                        rows={2}
+                        value={bullet.summary || ''}
+                        onChange={(e) => {
+                          const updated = [...caseData.debate.bullets];
+                          updated[bIdx].summary = e.target.value;
+                          setCaseData({
+                            ...caseData,
+                            debate: { ...caseData.debate, bullets: updated }
+                          });
+                        }}
+                        className="dr-input py-1 text-xs text-gray-300"
+                        placeholder="Краткое описание факта..."
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Truth Table / Climax Rule */}
+            <div className="p-4 bg-[#140b18] border-2 border-[#ff2a85] rounded-lg space-y-4 font-mono text-xs">
+              <div className="flex items-center gap-2 text-sm font-cyber font-bold text-[#ff2a85]">
+                <Flame size={18} />
+                <span>ПРАВИЛО РАЗГРОМА ЛЖИ // УСЛОВИЕ TRUTH BREAK</span>
+              </div>
+              <p className="text-[11px] text-gray-300">
+                Укажите, какая именно реплика со слабой точкой должна быть поражена какой пулей правды для завершения дебатов:
+              </p>
+
+              {(() => {
+                const TT_KEY = ['truth', 'Table'].join('');
+                const rule = caseData.debate?.[TT_KEY]?.[0] || {};
+                const currentStmtsWithWp = (caseData.debate?.statements || []).filter(s => s.weakPoints && s.weakPoints.length > 0);
+                const currentBullets = caseData.debate?.bullets || [];
+
+                return (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-gray-400 block mb-1">ОПРОВЕРГАЕМАЯ РЕПЛИКА (WEAK POINT):</label>
+                        <select
+                          value={`${rule.statementId || ''}:${rule.weakPointId || ''}`}
+                          onChange={(e) => {
+                            const [sId, wpId] = e.target.value.split(':');
+                            const updatedRule = {
+                              ...rule,
+                              statementId: sId,
+                              weakPointId: wpId
+                            };
+                            setCaseData({
+                              ...caseData,
+                              debate: { ...caseData.debate, [TT_KEY]: [updatedRule] }
+                            });
+                          }}
+                          className="dr-input py-1.5 text-xs text-amber-300 font-bold"
+                        >
+                          <option value=":">-- Выберите уязвимую реплику --</option>
+                          {currentStmtsWithWp.map(s => (
+                            <option key={s.id} value={`${s.id}:${s.weakPoints[0].id}`}>
+                              [{s.id}] {s.speaker}: «{s.weakPoints[0].phrase}»
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-gray-400 block mb-1">РАЗБИВАЮЩАЯ ПУЛЯ ПРАВДЫ:</label>
+                        <select
+                          value={rule.bulletId || ''}
+                          onChange={(e) => {
+                            const updatedRule = {
+                              ...rule,
+                              bulletId: e.target.value
+                            };
+                            setCaseData({
+                              ...caseData,
+                              debate: { ...caseData.debate, [TT_KEY]: [updatedRule] }
+                            });
+                          }}
+                          className="dr-input py-1.5 text-xs text-[#00f3ff] font-bold"
+                        >
+                          <option value="">-- Выберите пулю правды --</option>
+                          {currentBullets.map(b => (
+                            <option key={b.id} value={b.id || b.code}>
+                              [{b.code || b.id}] {b.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-gray-400 block mb-1">
+                        ФИНАЛЬНАЯ РЕПЛИКА НАГИТО (COUNTER-STATEMENT ПРИ ПОБЕДЕ):
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={rule.counterStatement || ''}
+                        onChange={(e) => {
+                          const updatedRule = {
+                            ...rule,
+                            counterStatement: e.target.value
+                          };
+                          setCaseData({
+                            ...caseData,
+                            debate: { ...caseData.debate, [TT_KEY]: [updatedRule] }
+                          });
+                        }}
+                        className="dr-input py-1.5 text-xs text-white italic font-serif"
+                        placeholder="«Твое алиби рушится прямо здесь!...»"
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -1655,6 +2437,269 @@ export default function AdminDashboard({ onClose }) {
                 >
                   {isResetting ? 'СБРОС...' : 'ПОДТВЕРДИТЬ СБРОС'}
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Character Import Modal (Danganronpa Canonical Roster) */}
+        {isCharImportModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-3 sm:p-6 backdrop-blur-md">
+            <div className="bg-[#0b0f1d] border-2 border-[#00f3ff] rounded-xl max-w-4xl w-full h-[90vh] flex flex-col shadow-[0_0_40px_rgba(0,243,255,0.2)] overflow-hidden font-mono">
+              
+              {/* Modal Header */}
+              <div className="p-4 sm:p-5 border-b border-[#1c2848] bg-[#0e1426] flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#00f3ff]/10 border border-[#00f3ff] flex items-center justify-center text-[#00f3ff]">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-cyber font-bold text-white text-base sm:text-lg flex items-center gap-2">
+                      <span>БЫСТРЫЙ ИМПОРТ УЧАСТНИКОВ // DANGANRONPA</span>
+                    </h3>
+                    <span className="text-[11px] text-gray-400">
+                      Каноничные имена русской Danganronpa Wiki для быстрых игр на Shinri Trial
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsCharImportModalOpen(false)}
+                  className="p-1.5 text-gray-400 hover:text-white rounded bg-[#172036]"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Filters & Search Toolbar */}
+              <div className="p-3 sm:p-4 border-b border-[#1c2848] bg-[#090d18] flex flex-wrap items-center justify-between gap-3">
+                
+                {/* Game filter tabs */}
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  {[
+                    { id: 'ALL', label: 'ВСЕ (48)' },
+                    { id: 'DR1', label: 'DR1 (16)' },
+                    { id: 'DR2', label: 'DR2 (16)' },
+                    { id: 'V3', label: 'V3 (16)' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        SoundFX.playClick();
+                        setCharFilterGame(tab.id);
+                      }}
+                      className={`px-3 py-1.5 rounded transition-all ${
+                        charFilterGame === tab.id
+                          ? 'bg-[#00f3ff] text-black font-bold shadow-[0_0_10px_rgba(0,243,255,0.4)]'
+                          : 'bg-[#12192e] text-gray-300 hover:bg-[#1a2442]'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Search input */}
+                <div className="relative flex-1 sm:max-w-xs min-w-[200px]">
+                  <Search size={14} className="absolute left-2.5 top-2.5 text-gray-500" />
+                  <input
+                    type="text"
+                    value={charSearchQuery}
+                    onChange={(e) => setCharSearchQuery(e.target.value)}
+                    placeholder="Поиск по имени или роли..."
+                    className="dr-input py-1.5 pl-8 text-xs text-white"
+                  />
+                  {charSearchQuery && (
+                    <button
+                      onClick={() => setCharSearchQuery('')}
+                      className="absolute right-2.5 top-2 text-gray-400 hover:text-white text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Bulk group selectors */}
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px] w-full pt-1 border-t border-[#16213c]">
+                  <span className="text-gray-400 mr-1">Быстрый выбор:</span>
+                  <button
+                    onClick={() => handleSelectGameGroup('DR1')}
+                    className="px-2 py-1 rounded bg-[#131c34] hover:bg-[#1c294c] text-cyan-300 border border-[#213257]"
+                  >
+                    + Состав DR1
+                  </button>
+                  <button
+                    onClick={() => handleSelectGameGroup('DR2')}
+                    className="px-2 py-1 rounded bg-[#131c34] hover:bg-[#1c294c] text-cyan-300 border border-[#213257]"
+                  >
+                    + Состав DR2
+                  </button>
+                  <button
+                    onClick={() => handleSelectGameGroup('V3')}
+                    className="px-2 py-1 rounded bg-[#131c34] hover:bg-[#1c294c] text-cyan-300 border border-[#213257]"
+                  >
+                    + Состав V3
+                  </button>
+                  {selectedCharIds.length > 0 && (
+                    <button
+                      onClick={handleClearCharSelect}
+                      className="px-2 py-1 rounded bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/40 ml-auto"
+                    >
+                      Очистить выбор
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Characters Grid (Scrollable) */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 bg-[#070a14]">
+                {(() => {
+                  const filtered = DANGANRONPA_CHARACTERS.filter(char => {
+                    const matchesGame = charFilterGame === 'ALL' || char.game === charFilterGame;
+                    const q = charSearchQuery.trim().toLowerCase();
+                    const matchesQuery = !q ||
+                      char.name.toLowerCase().includes(q) ||
+                      char.role.toLowerCase().includes(q) ||
+                      (char.aliases || []).some(a => a.toLowerCase().includes(q));
+                    return matchesGame && matchesQuery;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="text-center py-16 text-gray-500 text-xs">
+                        Персонажи по данному фильтру не найдены.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                      {filtered.map(char => {
+                        const isSelected = selectedCharIds.includes(char.id);
+                        const isVictim = selectedVictimCharId === char.id;
+                        const isKiller = selectedKillerCharId === char.id;
+
+                        // Initials for avatar
+                        const words = char.name.split(' ');
+                        const initials = words.map(w => w[0]).join('').slice(0, 2);
+
+                        return (
+                          <div
+                            key={char.id}
+                            onClick={() => handleToggleCharSelect(char.id)}
+                            className={`p-3 rounded-lg border text-left cursor-pointer transition-all flex flex-col justify-between select-none relative ${
+                              isSelected
+                                ? 'bg-[#0e1e36] border-[#00f3ff] shadow-[0_0_12px_rgba(0,243,255,0.25)] scale-[1.02]'
+                                : 'bg-[#0a0e1c] border-[#1c2744] hover:border-gray-500 text-gray-400'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-1.5 mb-2">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                                    isSelected ? 'bg-[#00f3ff] text-black' : 'bg-[#151e36] text-gray-300'
+                                  }`}>
+                                    {initials}
+                                  </div>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                                    char.game === 'DR1' ? 'bg-amber-950/60 text-amber-300 border border-amber-800/40' :
+                                    char.game === 'DR2' ? 'bg-cyan-950/60 text-cyan-300 border border-cyan-800/40' :
+                                    'bg-purple-950/60 text-purple-300 border border-purple-800/40'
+                                  }`}>
+                                    {char.game}
+                                  </span>
+                                </div>
+
+                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                                  isSelected ? 'bg-[#00f3ff] border-[#00f3ff] text-black' : 'border-gray-600 bg-transparent'
+                                }`}>
+                                  {isSelected && <Check size={13} strokeWidth={3} />}
+                                </div>
+                              </div>
+
+                              <div className={`font-bold text-xs leading-tight mb-1 ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                                {char.name}
+                              </div>
+                              <div className="text-[10px] text-gray-400 leading-tight">
+                                {char.role}
+                              </div>
+                            </div>
+
+                            {/* Role tags if assigned */}
+                            {(isVictim || isKiller) && (
+                              <div className="mt-2 pt-2 border-t border-[#1b2b4a] flex flex-wrap gap-1 text-[9px] font-bold">
+                                {isVictim && <span className="bg-[#00f3ff] text-black px-1.5 py-0.5 rounded">💀 ЖЕРТВА</span>}
+                                {isKiller && <span className="bg-[#ff2a85] text-white px-1.5 py-0.5 rounded">👑 УБИЙЦА</span>}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Modal Footer with Fast Roles & Action */}
+              <div className="p-4 border-t border-[#1c2848] bg-[#0a0e1c] flex flex-wrap items-center justify-between gap-3 text-xs">
+                
+                {/* Victim & Killer Assignment Dropdowns */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400 text-[11px]">💀 Жертва:</span>
+                    <select
+                      value={selectedVictimCharId}
+                      onChange={(e) => setSelectedVictimCharId(e.target.value)}
+                      disabled={selectedCharIds.length === 0}
+                      className="bg-[#12192e] border border-[#2b395a] text-cyan-300 font-bold px-2 py-1 rounded text-xs"
+                    >
+                      <option value="">-- Не выбрано --</option>
+                      {DANGANRONPA_CHARACTERS.filter(c => selectedCharIds.includes(c.id)).map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400 text-[11px]">👑 Убийца (Зачернённый):</span>
+                    <select
+                      value={selectedKillerCharId}
+                      onChange={(e) => setSelectedKillerCharId(e.target.value)}
+                      disabled={selectedCharIds.length === 0}
+                      className="bg-[#12192e] border border-[#2b395a] text-[#ff2a85] font-bold px-2 py-1 rounded text-xs"
+                    >
+                      <option value="">-- Не выбрано --</option>
+                      {DANGANRONPA_CHARACTERS.filter(c => selectedCharIds.includes(c.id)).map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Counter & Action */}
+                <div className="flex items-center gap-3 ml-auto">
+                  <span className="text-gray-400 text-xs">
+                    Отмечено: <strong className="text-[#00f3ff]">{selectedCharIds.length}</strong> уч.
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCharImportModalOpen(false)}
+                    className="dr-btn py-2 px-4 text-xs font-mono text-gray-300"
+                  >
+                    ОТМЕНА
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleApplyCharacterImport}
+                    disabled={selectedCharIds.length === 0 || isImportingRoster}
+                    className="dr-btn dr-btn-primary py-2 px-6 text-xs font-cyber font-bold flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Sparkles size={14} />
+                    <span>{isImportingRoster ? 'ИМПОРТ...' : 'ПРИМЕНИТЬ К СУДУ'}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -82,12 +82,15 @@ router.put('/case', requireAdmin, (req, res) => {
     'accessCode',
     'recoveryKey',
     'killer',
+    'killerFullName',
+    'killerRole',
     'victim',
     'location',
     'incidentTime',
     'status',
     'quote',
-    'weapon'
+    'weapon',
+    'debate'
   ];
 
   for (const field of allowedFields) {
@@ -324,8 +327,24 @@ router.put('/suspects', requireAdmin, (req, res) => {
   if (Array.isArray(req.body.suspects)) {
     caseData.suspects = req.body.suspects;
     saveCase(caseData);
+    addAudit(getClientIp(req), 'SUSPECTS_UPDATED', `Обновлен список подозреваемых (${req.body.suspects.length} чел.)`);
   }
   res.json({ success: true, suspects: caseData.suspects });
+});
+
+// Debate constructor management
+router.put('/debate', requireAdmin, (req, res) => {
+  const caseData = getCase();
+  const debateUpdate = req.body.debate;
+  if (debateUpdate && typeof debateUpdate === 'object') {
+    caseData.debate = {
+      ...(caseData.debate || {}),
+      ...debateUpdate
+    };
+    saveCase(caseData);
+    addAudit(getClientIp(req), 'DEBATE_UPDATED', `Обновлен конструктор дебатов: ${caseData.debate.topic || 'Без названия'}`);
+  }
+  res.json({ success: true, debate: caseData.debate, message: 'КОНФИГУРАЦИЯ ДЕБАТОВ СОХРАНЕНА.' });
 });
 
 // IP Locks Management

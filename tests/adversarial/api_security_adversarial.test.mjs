@@ -604,7 +604,7 @@ describe('Adversarial Stress Testing: Backend Security Endpoints', () => {
       // Verify СКУД logs do not reveal unmasked holder without recovered session
       for (const log of res.data.skudLogs) {
         if (log.cardId === 'CARD-AR883') {
-          assert.doesNotMatch(log.holder, /Кируми Тодзё/, 'Unauthenticated /sectors must not unmask CARD-AR883 holder name');
+          assert.doesNotMatch(log.holder, /Кируми/, 'Unauthenticated /sectors must not unmask CARD-AR883 holder name');
         }
       }
     });

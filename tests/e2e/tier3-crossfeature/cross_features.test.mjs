@@ -53,13 +53,13 @@ describe('Tier 3: Cross-Feature Combinations & State Transitions', () => {
     // 1. Solve Suspect #03 (Kirumi) puzzle riddle
     const unlockRes = await client.unlockSuspect('03', 'AR-883');
     assert.equal(unlockRes.status, 200);
-    assert.equal(unlockRes.data.realName, 'Кируми Тодзё');
+    assert.match(unlockRes.data.realName, /Кируми Тодж[оеё]/);
 
     // 2. Fetch updated data and verify de-anonymized profile
     const dataRes = await client.getData();
     const suspect03 = dataRes.data.data.suspects.find(s => s.id === '03');
     assert.equal(suspect03.isUnlocked, true);
-    assert.equal(suspect03.name, 'Кируми Тодзё');
+    assert.match(suspect03.name, /Кируми Тодж[оеё]/);
 
     // 3. Fire contradiction Truth Bullet CHAT_01 at Weak Point WP_02
     const debateRes = await client.fireDebateBullet({
