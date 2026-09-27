@@ -20,7 +20,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'shinri-admin-hope-2026';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sidershope333';
 const activeAdminTokens = new Set();
 
 // Admin Authentication Middleware
@@ -102,6 +102,25 @@ router.put('/case', requireAdmin, (req, res) => {
   saveCase(caseData);
   addAudit(ip, 'UPDATE_CASE_CONFIG', `Обновлена конфигурация дела. Убийца: ${caseData.killer}, Пароль: ${caseData.accessCode}`);
   res.json({ success: true, data: caseData, message: 'НАСТРОЙКИ ДЕЛА СОХРАНЕНЫ.' });
+});
+
+// Full Case Preset Import
+router.post('/case/import-full', requireAdmin, (req, res) => {
+  const ip = getClientIp(req);
+  const newCaseData = req.body;
+  if (!newCaseData || typeof newCaseData !== 'object' || Array.isArray(newCaseData)) {
+    return res.status(400).json({ success: false, error: 'Неверный формат данных дела.' });
+  }
+
+  const currentCase = getCase();
+  const mergedCase = {
+    ...currentCase,
+    ...newCaseData
+  };
+
+  saveCase(mergedCase);
+  addAudit(ip, 'CASE_IMPORT_FULL', 'Импортирован полный сценарий дела из JSON.');
+  res.json({ success: true, message: 'Сценарий дела успешно загружен!', data: mergedCase });
 });
 
 // CRUD: Documents

@@ -32,7 +32,9 @@ import {
   Filter,
   Flame,
   Check,
-  ChevronRight
+  ChevronRight,
+  Clipboard,
+  Download
 } from 'lucide-react';
 import { SoundFX } from '../SoundFX';
 import { DANGANRONPA_CHARACTERS, createSuspectFromCharacter } from '../../data/characters';
@@ -76,7 +78,11 @@ export default function AdminDashboard({ onClose }) {
   const [uploadCamera, setUploadCamera] = useState("Снимок Нагито (GMod)");
   const [uploadDesc, setUploadDesc] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isDraggingScreenshot, setIsDraggingScreenshot] = useState(false);
+  const [pastedNotice, setPastedNotice] = useState(false);
+  const [suspectSearchQuery, setSuspectSearchQuery] = useState('');
   const fileInputRef = useRef(null);
+  const jsonInputRef = useRef(null);
 
   // Check auth and load data
   useEffect(() => {
@@ -208,21 +214,43 @@ export default function AdminDashboard({ onClose }) {
     }
   };
 
-  // Handle Garry's Mod Screenshot selection (Idea 4)
-  const handleFileSelected = (file) => {
+  // Handle Garry's Mod Screenshot selection or Ctrl+V paste
+  const handleFileSelected = (file, fromPaste = false) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       showError('Пожалуйста, выберите файл изображения (PNG, JPG, WebP).');
       return;
     }
     setUploadFile(file);
-    if (!uploadTitle) {
-      const rawName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
-      setUploadTitle(rawName);
+    const now = new Date();
+    const timeFormatted = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const fullTimeFormatted = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    if (!uploadTitle || uploadTitle.startsWith('Скриншот с места преступления')) {
+      if (file.name && file.name !== 'image.png' && !file.name.startsWith('blob')) {
+        const rawName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+        setUploadTitle(rawName);
+      } else {
+        setUploadTitle(`Скриншот с места преступления [${fullTimeFormatted}]`);
+      }
     }
+    if (!uploadTime) {
+      setUploadTime(timeFormatted);
+    }
+    if (!uploadCategory) {
+      setUploadCategory('Улика с места преступления');
+    }
+    if (!uploadCamera) {
+      setUploadCamera('Камера Нагито (GMod)');
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       setUploadPreview(e.target.result);
+      if (fromPaste) {
+        setPastedNotice(true);
+        setTimeout(() => setPastedNotice(false), 6000);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -231,16 +259,17 @@ export default function AdminDashboard({ onClose }) {
   const handleUploadScreenshot = async (e) => {
     if (e) e.preventDefault();
     if (!uploadPreview) {
-      showError('Сначала выберите или перетащите скриншот!');
+      showError('Сначала выберите или вставьте скриншот (Ctrl+V)!');
       return;
     }
     setIsUploading(true);
     try {
+      const now = new Date();
       const payload = {
-        title: uploadTitle || 'Скриншот с места преступления',
-        time: uploadTime || '21:40',
+        title: uploadTitle || `Скриншот с места преступления [${now.toLocaleTimeString('ru-RU')}]`,
+        time: uploadTime || now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
         tag: uploadCategory || 'Улика с места преступления',
-        camera: uploadCamera || 'GMOD CAMERA',
+        camera: uploadCamera || 'Камера Нагито (GMod)',
         desc: uploadDesc || '',
         imageBase64: uploadPreview,
         filename: uploadFile?.name || 'screenshot.png'
@@ -263,6 +292,7 @@ export default function AdminDashboard({ onClose }) {
         setUploadPreview('');
         setUploadTitle('');
         setUploadDesc('');
+        setPastedNotice(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
         loadAllAdminData();
       } else {
@@ -276,6 +306,246 @@ export default function AdminDashboard({ onClose }) {
       setIsUploading(false);
     }
   };
+
+  // Quick 1-Click publish for pasted screenshot
+  const handleQuickPublishScreenshot = async () => {
+    if (!uploadPreview) {
+      showError('Сначала вставьте или выберите скриншот (Ctrl+V)!');
+      return;
+    }
+    setIsUploading(true);
+    const now = new Date();
+    const resolvedTitle = uploadTitle || `Скриншот с места преступления [${now.toLocaleTimeString('ru-RU')}]`;
+    const resolvedTime = uploadTime || now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    try {
+      const payload = {
+        title: resolvedTitle,
+        time: resolvedTime,
+        tag: uploadCategory || 'Улика с места преступления',
+        camera: uploadCamera || 'Камера Нагито (GMod)',
+        desc: uploadDesc || '',
+        imageBase64: uploadPreview,
+        filename: uploadFile?.name || 'clipboard_screenshot.png'
+      };
+
+      const res = await fetch('/api/admin/upload-screenshot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': authToken
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        SoundFX.playAccessGranted();
+        showSuccess(`✅ Скриншот «${resolvedTitle}» опубликован в материалах дела!`);
+        setUploadFile(null);
+        setUploadPreview('');
+        setUploadTitle('');
+        setUploadDesc('');
+        setPastedNotice(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        loadAllAdminData();
+      } else {
+        SoundFX.playAccessDenied();
+        showError(data.error || 'Ошибка загрузки изображения');
+      }
+    } catch (err) {
+      SoundFX.playAccessDenied();
+      showError('Ошибка соединения при отправке скриншота');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Export full case to JSON backup file
+  const handleExportCaseJSON = () => {
+    SoundFX.playClick();
+    if (!caseData) return;
+    const blob = new Blob([JSON.stringify(caseData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shinri_case_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showSuccess('Конфигурация дела экспортирована в JSON файл!');
+  };
+
+  // Import full case from JSON preset file
+  const handleImportCaseJSON = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const importedData = JSON.parse(event.target.result);
+        if (!importedData || typeof importedData !== 'object' || Array.isArray(importedData)) {
+          showError('Некорректный формат JSON файла.');
+          return;
+        }
+
+        const res = await fetch('/api/admin/case/import-full', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-token': authToken
+          },
+          body: JSON.stringify(importedData)
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          SoundFX.playAccessGranted();
+          setCaseData(data.data || importedData);
+          showSuccess('Пресет дела успешно загружен из JSON файла!');
+          loadAllAdminData();
+        } else {
+          showError(data.error || 'Ошибка при импорте пресета на сервере.');
+        }
+      } catch (err) {
+        showError('Ошибка чтения JSON файла: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // Add quick clue template
+  const handleAddClueTemplate = async (templateType) => {
+    SoundFX.playClick();
+    let templateData = null;
+    const timeNow = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    if (templateType === 'weapon') {
+      templateData = {
+        code: `CLUE_WEAPON_${Date.now().toString().slice(-4)}`,
+        title: 'Орудие убийства',
+        time: timeNow,
+        author: 'Осмотр Нагито',
+        category: 'Улики',
+        content: `Предполагаемое орудие преступления (${caseData?.weapon || 'тяжелый предмет'}), обнаруженное в районе места происшествия. Содержит следы спешной протирки.`
+      };
+    } else if (templateType === 'time') {
+      templateData = {
+        code: `CLUE_TIME_${Date.now().toString().slice(-4)}`,
+        title: 'Окно времени смерти',
+        time: timeNow,
+        author: 'Медицинское заключение',
+        category: 'Протокол',
+        content: 'Смерть наступила в интервале между 21:00 и 21:40. В указанное время большинство подозреваемых находились в жилом секторе.'
+      };
+    } else if (templateType === 'lock') {
+      templateData = {
+        code: `CLUE_LOCK_${Date.now().toString().slice(-4)}`,
+        title: 'Состояние дверей и замков',
+        time: timeNow,
+        author: 'Протокол осмотра',
+        category: 'Улики',
+        content: 'Дверь в комнату была заперта изнутри. На цепочке замка обнаружены тонкие волокна синтетической нити.'
+      };
+    } else if (templateType === 'traces') {
+      templateData = {
+        code: `CLUE_TRACE_${Date.now().toString().slice(-4)}`,
+        title: 'Следы обуви и смытой крови',
+        time: timeNow,
+        author: 'Криминалистический анализ',
+        category: 'Улики',
+        content: 'Возле дренажного трапа найдены капли крови, смытые водой, а также частичный отпечаток подошвы спортивной обуви.'
+      };
+    }
+
+    if (!templateData) return;
+
+    try {
+      const res = await fetch('/api/admin/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
+        body: JSON.stringify(templateData)
+      });
+      if (res.ok) {
+        SoundFX.playAccessGranted();
+        showSuccess(`Добавлена типовая улика: «${templateData.title}»`);
+        loadAllAdminData();
+      }
+    } catch (err) {
+      showError('Ошибка добавления улики.');
+    }
+  };
+
+  // Global Keyboard Shortcuts (Ctrl+V, Ctrl+S, Esc)
+  useEffect(() => {
+    if (!authToken) return;
+
+    const handleKeyDown = (e) => {
+      // Esc closes modal or dashboard
+      if (e.key === 'Escape') {
+        if (isCharImportModalOpen) {
+          setIsCharImportModalOpen(false);
+        } else if (isResetModalOpen) {
+          setIsResetModalOpen(false);
+        } else if (onClose) {
+          onClose();
+        }
+        return;
+      }
+
+      // Ctrl + S (save current tab)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'ы' || e.key === 'Ы')) {
+        e.preventDefault();
+        SoundFX.playClick();
+        if (activeTab === 'case') {
+          handleSaveCaseSettings();
+        } else if (activeTab === 'debate') {
+          handleSaveDebate();
+        } else if (activeTab === 'media' && uploadPreview) {
+          handleQuickPublishScreenshot();
+        } else if (activeTab === 'suspects') {
+          fetch('/api/admin/suspects', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
+            body: JSON.stringify({ suspects: caseData?.suspects || [] })
+          }).then(() => showSuccess('Подозреваемые сохранены! (Ctrl+S)'));
+        }
+      }
+    };
+
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items || items.length === 0) return;
+
+      let imageItem = null;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type && items[i].type.startsWith('image/')) {
+          imageItem = items[i];
+          break;
+        }
+      }
+
+      if (imageItem) {
+        e.preventDefault();
+        const file = imageItem.getAsFile();
+        if (file) {
+          handleFileSelected(file, true);
+          setActiveTab('media');
+          SoundFX.playAccessGranted();
+          showSuccess('📋 Скриншот успешно вставлен из буфера (Ctrl+V)! Нажмите «ОПУБЛИКОВАТЬ» для мгновенного добавления.');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('paste', handlePaste);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [authToken, activeTab, isCharImportModalOpen, isResetModalOpen, caseData, uploadPreview, uploadTitle, uploadTime, uploadCategory, uploadCamera, uploadDesc, uploadFile]);
 
   // 1. Save Core Case Settings
   const handleSaveCaseSettings = async () => {
@@ -615,7 +885,7 @@ export default function AdminDashboard({ onClose }) {
     { id: 'debate', label: 'Конструктор Дебатов', icon: MessageSquare },
     { id: 'players', label: `Игроки (${playerSessions.length})`, icon: UserCheck, highlight: playerSessions.length > 0 },
     { id: 'documents', label: 'Файл Монокумы', icon: FileText },
-    { id: 'media', label: 'Фото и Скриншоты', icon: ImageIcon },
+    { id: 'media', label: `Фото и Скриншоты (${(caseData?.media || []).length})`, icon: ImageIcon, highlight: Boolean(uploadPreview) },
     { id: 'hints', label: 'Подсказки', icon: HelpCircle },
     { id: 'locks', label: `Блокировки IP (${locks.length})`, icon: Unlock, highlight: locks.length > 0 },
     { id: 'audit', label: 'Аудит', icon: Shield }
@@ -742,6 +1012,174 @@ export default function AdminDashboard({ onClose }) {
           </button>
         </div>
       </header>
+
+      {/* Quick Action Bar for fast Garry's Mod trial management */}
+      <div className="bg-[#0b0f1d] border-b border-[#202945] px-4 py-2 sticky top-[57px] z-30 flex flex-wrap items-center justify-between gap-2 text-xs font-mono backdrop-blur-md">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[#00f3ff] font-cyber font-bold flex items-center gap-1.5 mr-1">
+            <Zap size={14} className="text-[#00f3ff] animate-pulse" />
+            <span>БЫСТРЫЙ СТАРТ:</span>
+          </span>
+
+          {/* 1. Quick Roster Import */}
+          <button
+            onClick={() => {
+              SoundFX.playClick();
+              setIsCharImportModalOpen(true);
+            }}
+            className="px-2.5 py-1 rounded bg-[#141b2f] hover:bg-[#1c2642] border border-[#263556] hover:border-[#00f3ff] text-white flex items-center gap-1.5 transition-colors"
+            title="Выбрать участников раунда из 48 персонажей Danganronpa"
+          >
+            <Users size={12} className="text-[#00f3ff]" />
+            <span>Состав раунда (48)</span>
+          </button>
+
+          {/* 2. Debate Templates */}
+          <button
+            onClick={() => {
+              SoundFX.playClick();
+              setActiveTab('debate');
+            }}
+            className="px-2.5 py-1 rounded bg-[#141b2f] hover:bg-[#1c2642] border border-[#263556] hover:border-[#ff2a85] text-white flex items-center gap-1.5 transition-colors"
+            title="Перейти к конструктору дебатов и применить готовый шаблон"
+          >
+            <MessageSquare size={12} className="text-[#ff2a85]" />
+            <span>Шаблоны дебатов</span>
+          </button>
+
+          {/* 3. Paste Screenshot */}
+          <button
+            onClick={() => {
+              SoundFX.playClick();
+              setActiveTab('media');
+            }}
+            className="px-2.5 py-1 rounded bg-[#141b2f] hover:bg-[#1c2642] border border-[#263556] hover:border-[#00ff88] text-white flex items-center gap-1.5 transition-colors"
+            title="Вставить скриншот из буфера обмена (Ctrl+V)"
+          >
+            <Camera size={12} className="text-[#00ff88]" />
+            <span>Скриншот [Ctrl+V]</span>
+          </button>
+
+          {/* 4. IP Locks Clear Button */}
+          {locks.length > 0 ? (
+            <button
+              onClick={handleClearAllLocks}
+              className="px-2.5 py-1 rounded bg-[#ff2a85]/20 hover:bg-[#ff2a85]/30 border border-[#ff2a85] text-[#ff2a85] font-bold flex items-center gap-1.5 animate-pulse"
+              title="Снять все активные блокировки IP"
+            >
+              <Unlock size={12} />
+              <span>Разблокировать ({locks.length})</span>
+            </button>
+          ) : (
+            <span className="px-2 py-1 text-gray-500 flex items-center gap-1 text-[11px]">
+              <Check size={11} className="text-gray-500" />
+              <span>Блокировок: 0</span>
+            </span>
+          )}
+
+          {/* 5. Online Players */}
+          <button
+            onClick={() => {
+              SoundFX.playClick();
+              setActiveTab('players');
+            }}
+            className={`px-2.5 py-1 rounded border flex items-center gap-1.5 transition-colors ${
+              playerSessions.length > 0
+                ? 'bg-[#00f3ff]/15 border-[#00f3ff] text-[#00f3ff] hover:bg-[#00f3ff]/25 font-bold shadow-[0_0_10px_rgba(0,243,255,0.2)]'
+                : 'bg-[#141b2f] border-[#263556] text-gray-400 hover:text-white'
+            }`}
+            title="Посмотреть список игроков на сайте"
+          >
+            <UserCheck size={12} />
+            <span>В сети: {playerSessions.length}</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* JSON Export */}
+          <button
+            onClick={handleExportCaseJSON}
+            className="px-2 py-1 rounded bg-[#131828] hover:bg-[#1c233c] border border-[#222c4a] hover:border-gray-400 text-gray-300 hover:text-white flex items-center gap-1 transition-colors text-[11px]"
+            title="Скачать текущие настройки дела в файл JSON"
+          >
+            <Download size={11} />
+            <span>Экспорт JSON</span>
+          </button>
+
+          {/* JSON Import */}
+          <button
+            onClick={() => jsonInputRef.current?.click()}
+            className="px-2 py-1 rounded bg-[#131828] hover:bg-[#1c233c] border border-[#222c4a] hover:border-gray-400 text-gray-300 hover:text-white flex items-center gap-1 cursor-pointer transition-colors text-[11px]"
+            title="Загрузить пресет дела из файла JSON"
+          >
+            <Upload size={11} />
+            <span>Импорт JSON</span>
+          </button>
+          <input
+            type="file"
+            ref={jsonInputRef}
+            accept=".json,application/json"
+            onChange={handleImportCaseJSON}
+            className="hidden"
+          />
+        </div>
+      </div>
+
+      {/* Instant Ctrl+V Screenshot Preview Banner */}
+      {uploadPreview && (
+        <div className="max-w-6xl mx-auto mt-3 px-4">
+          <div className="bg-[#0b1322] border-2 border-[#00f3ff] rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 shadow-[0_0_20px_rgba(0,243,255,0.25)] animate-fade-in">
+            <div className="flex items-center gap-3">
+              <img
+                src={uploadPreview}
+                alt="Pasted Preview"
+                className="w-12 h-12 object-cover rounded border border-[#00f3ff] shadow-[0_0_8px_rgba(0,243,255,0.4)]"
+              />
+              <div>
+                <div className="text-xs font-cyber font-bold text-white flex items-center gap-1.5">
+                  <Clipboard size={14} className="text-[#00f3ff]" />
+                  <span>СКРИНШОТ ВСТАВЛЕН ИЗ БУФЕРА (CTRL+V):</span>
+                </div>
+                <div className="text-[11px] font-mono text-[#00f3ff]">
+                  «{uploadTitle || 'Скриншот с места преступления'}» ({uploadTime || 'сейчас'})
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('media')}
+                className="dr-btn py-1.5 px-3 text-xs font-mono text-gray-300 hover:text-white"
+              >
+                Редактировать детали
+              </button>
+              <button
+                type="button"
+                disabled={isUploading}
+                onClick={handleQuickPublishScreenshot}
+                className="dr-btn dr-btn-cyan py-1.5 px-4 text-xs font-cyber font-bold flex items-center gap-1.5 shadow-[0_0_15px_rgba(0,243,255,0.4)]"
+              >
+                <Zap size={14} />
+                <span>{isUploading ? 'ПУБЛИКАЦИЯ...' : '⚡ ОПУБЛИКОВАТЬ В 1 КЛИК'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUploadPreview('');
+                  setUploadFile(null);
+                  setPastedNotice(false);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+                className="p-1.5 text-gray-400 hover:text-red-400 font-mono text-xs rounded hover:bg-white/5"
+                title="Отменить"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status Toasts */}
       {saveSuccessMsg && (
@@ -960,6 +1398,47 @@ export default function AdminDashboard({ onClose }) {
               </button>
             </div>
 
+            <div className="p-3 bg-[#0d1222] border border-[#1d2745] rounded-lg flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-mono text-gray-300 flex items-center gap-1.5">
+                <Sparkles size={13} className="text-[#00f3ff]" />
+                <span className="font-bold text-white">БЫСТРЫЕ ШАБЛОНЫ УЛИК ДЛЯ РАУНДА:</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleAddClueTemplate('weapon')}
+                  className="px-2.5 py-1 rounded bg-[#161d31] hover:bg-[#1f2945] border border-[#2b395d] hover:border-[#00f3ff] text-xs font-mono text-gray-200 hover:text-white flex items-center gap-1 transition-colors"
+                  title="Добавить улику 'Орудие убийства'"
+                >
+                  <span>🔪 Орудие</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddClueTemplate('time')}
+                  className="px-2.5 py-1 rounded bg-[#161d31] hover:bg-[#1f2945] border border-[#2b395d] hover:border-[#00f3ff] text-xs font-mono text-gray-200 hover:text-white flex items-center gap-1 transition-colors"
+                  title="Добавить заключение по времени смерти"
+                >
+                  <span>⏱️ Время смерти</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddClueTemplate('lock')}
+                  className="px-2.5 py-1 rounded bg-[#161d31] hover:bg-[#1f2945] border border-[#2b395d] hover:border-[#00f3ff] text-xs font-mono text-gray-200 hover:text-white flex items-center gap-1 transition-colors"
+                  title="Добавить протокол осмотра замков и дверей"
+                >
+                  <span>🚪 Замок / Дверь</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddClueTemplate('traces')}
+                  className="px-2.5 py-1 rounded bg-[#161d31] hover:bg-[#1f2945] border border-[#2b395d] hover:border-[#00f3ff] text-xs font-mono text-gray-200 hover:text-white flex items-center gap-1 transition-colors"
+                  title="Добавить протокол следов борьбы / смытой крови"
+                >
+                  <span>🩸 Следы крови</span>
+                </button>
+              </div>
+            </div>
+
             <div className="space-y-3 font-mono text-xs">
               {(caseData.documents || []).map((doc, idx) => (
                 <div key={doc.id} className="p-4 bg-[#0a0d16] border border-[#1b233a] rounded space-y-3">
@@ -1114,30 +1593,52 @@ export default function AdminDashboard({ onClose }) {
               </div>
             </div>
 
-            {/* Garry's Mod Quick Screenshot Uploader (Idea 4) */}
-            <div className="p-4 bg-[#0a0d16] border border-[#00f3ff]/40 rounded-lg space-y-4 shadow-[0_0_20px_rgba(0,243,255,0.08)]">
+            {/* Garry's Mod Quick Screenshot Uploader (Idea 4 & Ctrl+V) */}
+            <div className={`p-4 bg-[#0a0d16] border rounded-lg space-y-4 shadow-[0_0_20px_rgba(0,243,255,0.08)] transition-all ${
+              uploadPreview ? 'border-[#00f3ff]' : 'border-[#00f3ff]/40'
+            }`}>
               <div className="flex flex-wrap items-center justify-between border-b border-[#1b233a] pb-2.5 gap-2">
                 <div className="flex items-center gap-2 text-[#00f3ff] font-cyber font-bold text-sm">
                   <Camera size={18} className="text-[#00f3ff]" />
-                  <span>БЫСТРАЯ ЗАГРУЗКА СКРИНШОТА ИЗ GARRYS MOD</span>
+                  <span>БЫСТРАЯ ЗАГРУЗКА СКРИНШОТА GMOD (CTRL + V)</span>
                 </div>
-                <span className="text-[10px] font-mono text-gray-400 bg-[#121829] px-2.5 py-1 rounded border border-[#1d2745]">
-                  PNG / JPG / WEBP • АВТОМАТИЧЕСКАЯ ПУБЛИКАЦИЯ В ФОТОАРХИВ
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-[#00ff88] bg-[#00ff88]/10 px-2 py-0.5 rounded border border-[#00ff88]/30 flex items-center gap-1">
+                    <Clipboard size={11} />
+                    <span>Ctrl+V работает в любой вкладке</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-gray-400 bg-[#121829] px-2.5 py-0.5 rounded border border-[#1d2745]">
+                    PNG / JPG / WebP
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Drag and Drop Zone */}
+                {/* Drag and Drop Zone & Ctrl+V Target */}
                 <div
-                  onDragOver={(e) => e.preventDefault()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDraggingScreenshot(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    setIsDraggingScreenshot(false);
+                  }}
                   onDrop={(e) => {
                     e.preventDefault();
+                    setIsDraggingScreenshot(false);
                     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                       handleFileSelected(e.dataTransfer.files[0]);
                     }
                   }}
                   onClick={() => fileInputRef.current?.click()}
-                  className="cursor-pointer border-2 border-dashed border-[#222f4c] hover:border-[#00f3ff] bg-[#070912] rounded-lg p-4 flex flex-col items-center justify-center text-center group transition-all min-h-[180px]"
+                  className={`cursor-pointer border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center text-center group transition-all min-h-[190px] relative ${
+                    isDraggingScreenshot
+                      ? 'border-[#00ff88] bg-[#00ff88]/10 shadow-[0_0_20px_rgba(0,255,136,0.3)]'
+                      : uploadPreview
+                      ? 'border-[#00f3ff] bg-[#080d1a]'
+                      : 'border-[#222f4c] hover:border-[#00f3ff] bg-[#070912]'
+                  }`}
                 >
                   <input
                     type="file"
@@ -1151,24 +1652,46 @@ export default function AdminDashboard({ onClose }) {
                     className="hidden"
                   />
                   {uploadPreview ? (
-                    <div className="space-y-2 w-full">
-                      <img
-                        src={uploadPreview}
-                        alt="Preview"
-                        className="max-h-32 w-auto mx-auto rounded border border-[#00f3ff]/50 object-contain shadow-[0_0_10px_rgba(0,243,255,0.2)]"
-                      />
-                      <span className="text-[11px] font-mono text-[#00f3ff] block truncate">
-                        {uploadFile?.name || 'Скриншот выбран'} (нажмите для замены)
-                      </span>
+                    <div className="space-y-3 w-full">
+                      <div className="relative group/prev">
+                        <img
+                          src={uploadPreview}
+                          alt="Preview"
+                          className="max-h-36 w-auto mx-auto rounded border-2 border-[#00f3ff] object-contain shadow-[0_0_15px_rgba(0,243,255,0.3)]"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/prev:opacity-100 flex items-center justify-center transition-opacity rounded">
+                          <span className="text-[11px] text-white font-mono bg-black/80 px-2 py-1 rounded">
+                            Нажмите для выбора другого файла
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] font-mono text-[#00f3ff] block truncate font-bold">
+                          {uploadFile?.name || 'Скриншот готов к загрузке'}
+                        </span>
+                        <span className="text-[10px] font-mono text-gray-400 block">
+                          Нажмите Ctrl+V для замены на новый снимок из буфера
+                        </span>
+                      </div>
                     </div>
                   ) : (
-                    <div className="space-y-2 text-gray-400 group-hover:text-[#00f3ff] transition-colors">
-                      <Upload size={32} className="mx-auto text-gray-500 group-hover:text-[#00f3ff] transition-transform group-hover:-translate-y-1" />
-                      <div className="text-xs font-mono font-bold text-gray-300 group-hover:text-[#00f3ff]">
-                        ПЕРЕТАЩИТЕ СКРИНШОТ GMOD СЮДА
+                    <div className="space-y-2.5 text-gray-400 group-hover:text-[#00f3ff] transition-colors p-2">
+                      <div className="relative inline-block">
+                        <Camera size={34} className="mx-auto text-gray-500 group-hover:text-[#00f3ff] transition-transform group-hover:-translate-y-1" />
+                        <span className="absolute -bottom-1 -right-2 bg-[#ff2a85] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
+                          CTRL+V
+                        </span>
                       </div>
-                      <div className="text-[10px] font-mono text-gray-500">
-                        или кликните для выбора из папки Garry's Mod
+                      <div>
+                        <div className="text-xs font-mono font-bold text-white group-hover:text-[#00f3ff]">
+                          ВСТАВИТЬ СКРИНШОТ ИЗ БУФЕРА (CTRL+V)
+                        </div>
+                        <div className="text-[10px] font-mono text-gray-400 mt-0.5">
+                          или перетащите файл / кликните для выбора
+                        </div>
+                      </div>
+                      <div className="text-[10px] font-mono text-[#00f3ff]/90 bg-[#00f3ff]/10 px-2 py-1 rounded border border-[#00f3ff]/20 inline-block">
+                        💡 Win+Shift+S в GMod ➔ кликните сюда ➔ Ctrl+V
                       </div>
                     </div>
                   )}
@@ -1233,13 +1756,14 @@ export default function AdminDashboard({ onClose }) {
                     />
                   </div>
 
-                  <div className="flex justify-end items-center gap-3 pt-1">
+                  <div className="flex flex-wrap justify-end items-center gap-2 pt-1">
                     {uploadPreview && (
                       <button
                         type="button"
                         onClick={() => {
                           setUploadPreview('');
                           setUploadFile(null);
+                          setPastedNotice(false);
                           if (fileInputRef.current) fileInputRef.current.value = '';
                         }}
                         className="dr-btn py-1.5 px-3 text-xs text-gray-400 font-mono hover:text-white"
@@ -1250,11 +1774,11 @@ export default function AdminDashboard({ onClose }) {
                     <button
                       type="button"
                       disabled={isUploading || !uploadPreview}
-                      onClick={handleUploadScreenshot}
+                      onClick={handleQuickPublishScreenshot}
                       className="dr-btn dr-btn-cyan py-1.5 px-5 text-xs font-cyber font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(0,243,255,0.3)] disabled:opacity-50"
                     >
-                      <Upload size={14} />
-                      <span>{isUploading ? 'ЗАГРУЗКА...' : 'ОПУБЛИКОВАТЬ В МАТЕРИАЛАХ ДЕЛА'}</span>
+                      <Zap size={14} />
+                      <span>{isUploading ? 'ЗАГРУЗКА...' : '⚡ ОПУБЛИКОВАТЬ В 1 КЛИК'}</span>
                     </button>
                   </div>
                 </div>
@@ -1469,6 +1993,23 @@ export default function AdminDashboard({ onClose }) {
                   <span>⚡ БЫСТРЫЙ ИМПОРТ ИЗ DANGANRONPA</span>
                 </button>
 
+                {(caseData.suspects || []).length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Очистить весь список участников перед новой игрой?')) {
+                        SoundFX.playClick();
+                        setCaseData({ ...caseData, suspects: [] });
+                        showSuccess('Список участников очищен.');
+                      }
+                    }}
+                    className="dr-btn py-2 px-3 text-xs font-mono text-red-400 border-red-500/40 hover:bg-red-500/20 flex items-center gap-1"
+                    title="Очистить всех участников для нового раунда"
+                  >
+                    <Trash2 size={13} />
+                    <span>ОЧИСТИТЬ ВСЕХ</span>
+                  </button>
+                )}
+
                 <button
                   onClick={async () => {
                     SoundFX.playClick();
@@ -1487,8 +2028,39 @@ export default function AdminDashboard({ onClose }) {
               </div>
             </div>
 
+            {/* Live Search Filter for Suspects */}
+            {(caseData.suspects || []).length > 3 && (
+              <div className="flex items-center gap-2 bg-[#0a0d16] border border-[#1b233a] rounded px-3 py-2">
+                <Search size={14} className="text-[#00f3ff]" />
+                <input
+                  type="text"
+                  value={suspectSearchQuery}
+                  onChange={(e) => setSuspectSearchQuery(e.target.value)}
+                  placeholder="Быстрый поиск ученика по имени или таланту..."
+                  className="bg-transparent text-xs text-white placeholder-gray-500 focus:outline-none w-full font-mono"
+                />
+                {suspectSearchQuery && (
+                  <button
+                    onClick={() => setSuspectSearchQuery('')}
+                    className="text-gray-500 hover:text-white text-xs font-mono"
+                  >
+                    ✕ Очистить
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="space-y-4 font-mono text-xs">
-              {(caseData.suspects || []).map((suspect, idx) => {
+              {(caseData.suspects || []).filter(suspect => {
+                if (!suspectSearchQuery.trim()) return true;
+                const q = suspectSearchQuery.toLowerCase();
+                return (
+                  (suspect.realName || '').toLowerCase().includes(q) ||
+                  (suspect.realRole || '').toLowerCase().includes(q) ||
+                  (suspect.maskedName || '').toLowerCase().includes(q) ||
+                  (suspect.maskedRole || '').toLowerCase().includes(q)
+                );
+              }).map((suspect, idx) => {
                 const isCurrentKiller = caseData.killerFullName === suspect.realName || caseData.killer === suspect.realName?.split(' ')[0].toUpperCase();
                 const isCurrentVictim = caseData.victim?.includes(suspect.realName);
 
@@ -2706,6 +3278,33 @@ export default function AdminDashboard({ onClose }) {
         )}
 
       </div>
+
+      {/* Keyboard Shortcuts & Status Footer */}
+      <footer className="border-t border-[#1b233a] bg-[#080b14] px-4 py-2 mt-8 text-[11px] font-mono text-gray-400 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-gray-300 font-bold flex items-center gap-1">
+            <Zap size={12} className="text-[#00f3ff]" />
+            ГОРЯЧИЕ КЛАВИШИ:
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="bg-[#141b2d] text-[#00f3ff] px-1.5 py-0.5 rounded border border-[#232f4e] font-bold">Ctrl + V</kbd>
+            <span>Вставка скриншота</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="bg-[#141b2d] text-gray-200 px-1.5 py-0.5 rounded border border-[#232f4e] font-bold">Ctrl + S</kbd>
+            <span>Быстрое сохранение</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <kbd className="bg-[#141b2d] text-gray-200 px-1.5 py-0.5 rounded border border-[#232f4e] font-bold">Esc</kbd>
+            <span>Закрыть окно / назад</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-gray-500">
+          <span>SHINRI TRIAL // NODE 04-271</span>
+          <span>•</span>
+          <span className="text-[#00ff88]">СЕРВЕР АКТИВЕН</span>
+        </div>
+      </footer>
     </div>
   );
 }
