@@ -34,7 +34,8 @@ import {
   Check,
   ChevronRight,
   Clipboard,
-  Download
+  Download,
+  FolderOpen
 } from 'lucide-react';
 import { SoundFX } from '../SoundFX';
 import { DANGANRONPA_CHARACTERS, createSuspectFromCharacter } from '../../data/characters';
@@ -83,6 +84,7 @@ export default function AdminDashboard({ onClose }) {
   const [suspectSearchQuery, setSuspectSearchQuery] = useState('');
   const fileInputRef = useRef(null);
   const jsonInputRef = useRef(null);
+  const dashboardContainerRef = useRef(null);
 
   // Check auth and load data
   useEffect(() => {
@@ -217,7 +219,10 @@ export default function AdminDashboard({ onClose }) {
   // Handle Garry's Mod Screenshot selection or Ctrl+V paste
   const handleFileSelected = (file, fromPaste = false) => {
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
+    const isImage = (file.type && file.type.startsWith('image/')) ||
+                    (file.name && file.name.match(/\.(png|jpe?g|webp|bmp|gif)$/i)) ||
+                    (file instanceof Blob && (!file.type || file.type.startsWith('image/')));
+    if (!isImage) {
       showError('Пожалуйста, выберите файл изображения (PNG, JPG, WebP).');
       return;
     }
@@ -477,9 +482,106 @@ export default function AdminDashboard({ onClose }) {
     }
   };
 
-  // Global Keyboard Shortcuts (Ctrl+V, Ctrl+S, Esc)
+  // Extract image File/Blob from clipboard event data
+  const extractImageFromClipboardEvent = (clipboardData) => {
+    if (!clipboardData) return null;
+
+    // 1. Check clipboardData.items (Snipping Tool, PrtScn, browser copy image, etc.)
+    const items = clipboardData.items;
+    if (items && items.length > 0) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type && item.type.startsWith('image/')) {
+          const file = item.getAsFile?.();
+          if (file) return file;
+        }
+        if (item.kind === 'file') {
+          const file = item.getAsFile?.();
+          if (file && (file.type?.startsWith('image/') || file.size > 0)) {
+            return file;
+          }
+        }
+      }
+    }
+
+    // 2. Check clipboardData.files (Files copied in Explorer or desktop)
+    const files = clipboardData.files;
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type?.startsWith('image/') || file.name?.match(/\.(png|jpe?g|webp|bmp|gif)$/i)) {
+          return file;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  // Read image directly from Navigator Clipboard API
+  const readImageFromClipboardApi = async () => {
+    try {
+      if (navigator.clipboard?.read) {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const item of clipboardItems) {
+          const imageType = item.types.find((t) => t.startsWith('image/'));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            if (blob) return blob;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Clipboard read error (permission or format):', err);
+    }
+
+    // Secondary fallback: check if text in clipboard is a data URL or image link
+    try {
+      if (navigator.clipboard?.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && (text.startsWith('data:image/') || text.match(/^https?:\/\/.*\.(png|jpg|jpeg|webp|gif)/i))) {
+          const res = await fetch(text);
+          const blob = await res.blob();
+          if (blob && blob.type.startsWith('image/')) return blob;
+        }
+      }
+    } catch {}
+
+    return null;
+  };
+
+  // Unified clipboard paste handler
+  const handlePasteFromClipboard = (fileOrBlob) => {
+    if (!fileOrBlob) return false;
+    handleFileSelected(fileOrBlob, true);
+    setActiveTab('media');
+    SoundFX.playAccessGranted();
+    showSuccess('📋 Скриншот успешно вставлен из буфера обмена! Нажмите «⚡ ОПУБЛИКОВАТЬ В 1 КЛИК».');
+    return true;
+  };
+
+  // Click handler for explicit "Вставить из буфера" button
+  const handlePasteButtonClick = async () => {
+    SoundFX.playClick();
+    setActiveTab('media');
+    try {
+      const blob = await readImageFromClipboardApi();
+      if (blob) {
+        handlePasteFromClipboard(blob);
+        return;
+      }
+      showError('В буфере обмена нет изображения. Сделайте снимок в игре (Win+Shift+S или PrtScn) и нажмите кнопку снова, либо нажмите Ctrl+V.');
+    } catch (err) {
+      showError('Браузер ограничил доступ к буферу. Нажмите Ctrl+V на клавиатуре.');
+    }
+  };
+
+  // Global Keyboard Shortcuts (Ctrl+V, Ctrl+S, Esc) & Paste Listeners
   useEffect(() => {
     if (!authToken) return;
+
+    // Focus container on mount so key and paste events immediately register
+    dashboardContainerRef.current?.focus();
 
     const handleKeyDown = (e) => {
       // Esc closes modal or dashboard
@@ -511,39 +613,44 @@ export default function AdminDashboard({ onClose }) {
             body: JSON.stringify({ suspects: caseData?.suspects || [] })
           }).then(() => showSuccess('Подозреваемые сохранены! (Ctrl+S)'));
         }
+        return;
+      }
+
+      // Ctrl + V (fallback via keyboard event if native paste event is blocked/not fired)
+      if ((e.ctrlKey || e.metaKey) && (e.code === 'KeyV' || e.key === 'v' || e.key === 'V' || e.key === 'м' || e.key === 'М')) {
+        const isTextInput = e.target && (
+          e.target.tagName === 'INPUT' ||
+          e.target.tagName === 'TEXTAREA' ||
+          e.target.isContentEditable
+        );
+        // If user is NOT typing inside a text input/textarea, try reading clipboard directly
+        if (!isTextInput) {
+          readImageFromClipboardApi().then((blob) => {
+            if (blob) {
+              handlePasteFromClipboard(blob);
+            }
+          });
+        }
       }
     };
 
     const handlePaste = (e) => {
-      const items = e.clipboardData?.items;
-      if (!items || items.length === 0) return;
-
-      let imageItem = null;
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type && items[i].type.startsWith('image/')) {
-          imageItem = items[i];
-          break;
-        }
-      }
-
-      if (imageItem) {
+      const file = extractImageFromClipboardEvent(e.clipboardData || window.clipboardData);
+      if (file) {
         e.preventDefault();
-        const file = imageItem.getAsFile();
-        if (file) {
-          handleFileSelected(file, true);
-          setActiveTab('media');
-          SoundFX.playAccessGranted();
-          showSuccess('📋 Скриншот успешно вставлен из буфера (Ctrl+V)! Нажмите «ОПУБЛИКОВАТЬ» для мгновенного добавления.');
-        }
+        e.stopPropagation();
+        handlePasteFromClipboard(file);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('paste', handlePaste);
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('paste', handlePaste, true);
+    document.addEventListener('paste', handlePaste, true);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('paste', handlePaste);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('paste', handlePaste, true);
+      document.removeEventListener('paste', handlePaste, true);
     };
   }, [authToken, activeTab, isCharImportModalOpen, isResetModalOpen, caseData, uploadPreview, uploadTitle, uploadTime, uploadCategory, uploadCamera, uploadDesc, uploadFile]);
 
@@ -959,7 +1066,19 @@ export default function AdminDashboard({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#070910] text-gray-200 overflow-y-auto">
+    <div
+      ref={dashboardContainerRef}
+      tabIndex={0}
+      onPaste={(e) => {
+        const file = extractImageFromClipboardEvent(e.clipboardData || window.clipboardData);
+        if (file) {
+          e.preventDefault();
+          e.stopPropagation();
+          handlePasteFromClipboard(file);
+        }
+      }}
+      className="fixed inset-0 z-50 bg-[#070910] text-gray-200 overflow-y-auto outline-none"
+    >
       
       {/* Admin Top Bar */}
       <header className="border-b border-[#202945] bg-[#0c101c] px-4 py-3 sticky top-0 z-40 flex flex-wrap items-center justify-between gap-3">
@@ -1049,15 +1168,12 @@ export default function AdminDashboard({ onClose }) {
 
           {/* 3. Paste Screenshot */}
           <button
-            onClick={() => {
-              SoundFX.playClick();
-              setActiveTab('media');
-            }}
-            className="px-2.5 py-1 rounded bg-[#141b2f] hover:bg-[#1c2642] border border-[#263556] hover:border-[#00ff88] text-white flex items-center gap-1.5 transition-colors"
-            title="Вставить скриншот из буфера обмена (Ctrl+V)"
+            onClick={handlePasteButtonClick}
+            className="px-2.5 py-1 rounded bg-[#141b2f] hover:bg-[#1c2642] border border-[#263556] hover:border-[#00ff88] text-white flex items-center gap-1.5 transition-colors shadow-[0_0_8px_rgba(0,255,136,0.15)]"
+            title="Вставить скриншот из буфера обмена (клик или Ctrl+V)"
           >
-            <Camera size={12} className="text-[#00ff88]" />
-            <span>Скриншот [Ctrl+V]</span>
+            <Clipboard size={12} className="text-[#00ff88]" />
+            <span>Вставить из буфера [Ctrl+V]</span>
           </button>
 
           {/* 4. IP Locks Clear Button */}
@@ -1631,8 +1747,16 @@ export default function AdminDashboard({ onClose }) {
                       handleFileSelected(e.dataTransfer.files[0]);
                     }
                   }}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`cursor-pointer border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center text-center group transition-all min-h-[190px] relative ${
+                  onPaste={(e) => {
+                    const file = extractImageFromClipboardEvent(e.clipboardData || window.clipboardData);
+                    if (file) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handlePasteFromClipboard(file);
+                    }
+                  }}
+                  tabIndex={0}
+                  className={`border-2 border-dashed rounded-lg p-5 flex flex-col items-center justify-center text-center group transition-all min-h-[210px] relative outline-none focus:border-[#00f3ff] ${
                     isDraggingScreenshot
                       ? 'border-[#00ff88] bg-[#00ff88]/10 shadow-[0_0_20px_rgba(0,255,136,0.3)]'
                       : uploadPreview
@@ -1657,41 +1781,71 @@ export default function AdminDashboard({ onClose }) {
                         <img
                           src={uploadPreview}
                           alt="Preview"
-                          className="max-h-36 w-auto mx-auto rounded border-2 border-[#00f3ff] object-contain shadow-[0_0_15px_rgba(0,243,255,0.3)]"
+                          className="max-h-40 w-auto mx-auto rounded border-2 border-[#00f3ff] object-contain shadow-[0_0_15px_rgba(0,243,255,0.3)]"
                         />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/prev:opacity-100 flex items-center justify-center transition-opacity rounded">
-                          <span className="text-[11px] text-white font-mono bg-black/80 px-2 py-1 rounded">
-                            Нажмите для выбора другого файла
-                          </span>
-                        </div>
                       </div>
-                      <div className="space-y-0.5">
+                      <div className="space-y-1">
                         <span className="text-[11px] font-mono text-[#00f3ff] block truncate font-bold">
                           {uploadFile?.name || 'Скриншот готов к загрузке'}
                         </span>
-                        <span className="text-[10px] font-mono text-gray-400 block">
-                          Нажмите Ctrl+V для замены на новый снимок из буфера
-                        </span>
+                        <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={handlePasteButtonClick}
+                            className="text-[11px] font-mono text-gray-300 hover:text-white bg-[#141d33] px-2.5 py-1 rounded border border-[#233156] flex items-center gap-1"
+                          >
+                            <Clipboard size={12} className="text-[#00f3ff]" />
+                            <span>Заменить из буфера</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-[11px] font-mono text-gray-300 hover:text-white bg-[#141d33] px-2.5 py-1 rounded border border-[#233156] flex items-center gap-1"
+                          >
+                            <FolderOpen size={12} className="text-gray-400" />
+                            <span>Выбрать другой файл</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-2.5 text-gray-400 group-hover:text-[#00f3ff] transition-colors p-2">
+                    <div className="space-y-3 text-gray-400 p-2 w-full">
                       <div className="relative inline-block">
-                        <Camera size={34} className="mx-auto text-gray-500 group-hover:text-[#00f3ff] transition-transform group-hover:-translate-y-1" />
+                        <Camera size={36} className="mx-auto text-gray-500 group-hover:text-[#00f3ff] transition-transform group-hover:-translate-y-1" />
                         <span className="absolute -bottom-1 -right-2 bg-[#ff2a85] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
                           CTRL+V
                         </span>
                       </div>
-                      <div>
-                        <div className="text-xs font-mono font-bold text-white group-hover:text-[#00f3ff]">
-                          ВСТАВИТЬ СКРИНШОТ ИЗ БУФЕРА (CTRL+V)
+
+                      <div className="space-y-2">
+                        {/* Huge 1-Click Clipboard Paste Button */}
+                        <button
+                          type="button"
+                          onClick={handlePasteButtonClick}
+                          className="dr-btn dr-btn-primary py-2 px-5 text-xs font-cyber font-bold flex items-center justify-center gap-2 shadow-[0_0_18px_rgba(255,42,133,0.35)] mx-auto hover:scale-105 transition-transform"
+                        >
+                          <Clipboard size={14} />
+                          <span>📋 ВСТАВИТЬ ИЗ БУФЕРА (КЛИК)</span>
+                        </button>
+
+                        <div className="text-[11px] font-mono text-gray-300">
+                          или нажмите <kbd className="bg-[#18233c] text-[#00f3ff] px-2 py-0.5 rounded border border-[#2e416d] font-bold">CTRL + V</kbd> в любом месте
                         </div>
-                        <div className="text-[10px] font-mono text-gray-400 mt-0.5">
-                          или перетащите файл / кликните для выбора
+
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-[11px] font-mono text-gray-400 hover:text-[#00f3ff] inline-flex items-center gap-1 transition-colors"
+                          >
+                            <FolderOpen size={12} />
+                            <span>или перетащите файл / выберите из проводника</span>
+                          </button>
                         </div>
                       </div>
-                      <div className="text-[10px] font-mono text-[#00f3ff]/90 bg-[#00f3ff]/10 px-2 py-1 rounded border border-[#00f3ff]/20 inline-block">
-                        💡 Win+Shift+S в GMod ➔ кликните сюда ➔ Ctrl+V
+
+                      <div className="text-[10px] font-mono text-[#00f3ff]/90 bg-[#00f3ff]/10 px-3 py-1.5 rounded border border-[#00f3ff]/20 inline-block mt-1">
+                        💡 <strong>В игре:</strong> нажмите <kbd className="bg-black/50 text-amber-300 px-1 rounded">Win+Shift+S</kbd> ➔ выделите улику ➔ нажмите кнопку выше или Ctrl+V
                       </div>
                     </div>
                   )}
