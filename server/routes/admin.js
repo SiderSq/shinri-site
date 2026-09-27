@@ -13,7 +13,7 @@ import {
   addAudit
 } from '../storage.js';
 import { getClientIp } from '../utils/ip.js';
-import { clearAllSessions } from '../utils/session.js';
+import { clearAllSessions, getAllSessions } from '../utils/session.js';
 import { clearIssuedCertificates } from './investigation.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -444,6 +444,12 @@ router.post('/upload-screenshot', requireAdmin, (req, res) => {
     console.error('Screenshot upload error:', err);
     return res.status(500).json({ success: false, error: 'Не удалось сохранить изображение.' });
   }
+});
+
+// Active Player Sessions
+router.get('/sessions', requireAdmin, (req, res) => {
+  const sessions = getAllSessions();
+  res.json({ success: true, sessions });
 });
 
 // Audit Log

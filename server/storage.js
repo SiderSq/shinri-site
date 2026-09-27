@@ -137,12 +137,13 @@ export function getAudit() {
   return safeRead(AUDIT_FILE, []);
 }
 
-export function addAudit(ip, action, details) {
+export function addAudit(ip, action, details, playerName = null) {
   const audit = getAudit();
   audit.unshift({
     id: `AUDIT_${Date.now()}_${Math.random().toString(36).substring(7)}`,
     time: new Date().toISOString(),
     ip: ip || 'UNKNOWN',
+    playerName: playerName || null,
     action,
     details
   });

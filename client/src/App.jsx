@@ -147,7 +147,10 @@ export default function App() {
   }, []);
 
   // Handlers for state progression
-  const handleLoginSuccess = (sessionId) => {
+  const handleLoginSuccess = (sessionId, name) => {
+    if (name) {
+      handleStudentNameChange(name);
+    }
     setAppState('AUTHENTICATED');
   };
 

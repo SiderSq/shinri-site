@@ -106,8 +106,8 @@ export class ApiClient {
 
   // --- Specialized Endpoints ---
 
-  async login(code = '28042004333') {
-    const res = await this.post('/api/auth/login', { code });
+  async login(code = '28042004333', playerName = 'Макото Наэги') {
+    const res = await this.post('/api/auth/login', { code, playerName });
     if (res.data?.sessionId) {
       this.sessionId = res.data.sessionId;
     }

@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
-import { Lock, KeyRound, AlertTriangle, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { Lock, KeyRound, AlertTriangle, ArrowRight, Loader2, CheckCircle2, User } from 'lucide-react';
 import { SoundFX } from './SoundFX';
 
 export default function GatewayScreen({ onLoginSuccess }) {
+  const [playerName, setPlayerName] = useState(() => {
+    try {
+      return localStorage.getItem('shinri_student_name') || '';
+    } catch {
+      return '';
+    }
+  });
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -11,28 +18,40 @@ export default function GatewayScreen({ onLoginSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!code.trim() || loading || isAccepted) return;
+    const cleanName = playerName.trim();
+    const cleanCode = code.trim();
+
+    if (!cleanName) {
+      SoundFX.playAccessDenied();
+      setErrorMessage('Пожалуйста, укажите ваше имя перед входом в судебную сессию.');
+      return;
+    }
+
+    if (!cleanCode || loading || isAccepted) return;
 
     SoundFX.playClick();
     setLoading(true);
     setErrorMessage('');
-    setStatusMessage('ПРОВЕРКА КЛЮЧА ДОСТУПА...');
+    setStatusMessage('РЕГИСТРАЦИЯ УЧАСТНИКА И ПРОВЕРКА КЛЮЧА...');
 
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code.trim() })
+        body: JSON.stringify({ code: cleanCode, playerName: cleanName })
       });
 
       const data = await res.json();
 
       if (res.ok && data.success) {
         setIsAccepted(true);
-        setStatusMessage('КЛЮЧ ПРИНЯТ. ИНИЦИАЛИЗАЦИЯ ШЛЮЗА...');
+        setStatusMessage(`УЧАСТНИК [${cleanName.toUpperCase()}] ЗАРЕГИСТРИРОВАН. ВХОД...`);
+        try {
+          localStorage.setItem('shinri_student_name', cleanName);
+        } catch {}
         SoundFX.playAccessGranted();
         setTimeout(() => {
-          onLoginSuccess(data.sessionId);
+          onLoginSuccess(data.sessionId, cleanName);
         }, 1200);
       } else {
         SoundFX.playAccessDenied();
@@ -89,6 +108,42 @@ export default function GatewayScreen({ onLoginSuccess }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <div className="flex items-center justify-between text-xs font-mono text-gray-400 mb-2">
+              <label className="text-[#00f3ff] font-bold flex items-center gap-1.5">
+                <User size={13} className="text-[#00f3ff]" />
+                Укажите ваше имя для текущей судебной сессии:
+              </label>
+              <span className="text-amber-400 text-[10px] font-bold tracking-wider">[ ОБЯЗАТЕЛЬНО ]</span>
+            </div>
+            
+            <div className="relative w-full">
+              <input
+                type="text"
+                value={playerName}
+                onChange={(e) => {
+                  setPlayerName(e.target.value);
+                  if (errorMessage) setErrorMessage('');
+                }}
+                disabled={loading || isAccepted}
+                placeholder="Ваше игровое имя или позывной..."
+                autoFocus={!playerName}
+                maxLength={50}
+                className={`dr-input input-with-icon font-mono text-sm tracking-wide ${
+                  isAccepted
+                    ? 'border-[#00ff88] text-[#00ff88] bg-[#00ff88]/10'
+                    : ''
+                }`}
+              />
+              <User
+                className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                  isAccepted ? 'text-[#00ff88]' : 'text-gray-400'
+                }`}
+                size={18}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between text-xs font-mono text-gray-400 mb-2">
               <label>ВВЕДИТЕ КОД ДОСТУПА:</label>
               <span className="text-gray-500">[ СИМВОЛОВ: {code.length} ]</span>
             </div>
@@ -97,10 +152,13 @@ export default function GatewayScreen({ onLoginSuccess }) {
               <input
                 type="text"
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                onChange={(e) => {
+                  setCode(e.target.value);
+                  if (errorMessage) setErrorMessage('');
+                }}
                 disabled={loading || isAccepted}
                 placeholder="Код доступа..."
-                autoFocus
+                autoFocus={Boolean(playerName)}
                 className={`dr-input input-with-icon font-mono text-base tracking-widest ${
                   isAccepted
                     ? 'border-[#00ff88] text-[#00ff88] bg-[#00ff88]/10'
@@ -140,13 +198,13 @@ export default function GatewayScreen({ onLoginSuccess }) {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || isAccepted || !code.trim()}
+            disabled={loading || isAccepted || !code.trim() || !playerName.trim()}
             className="w-full dr-btn dr-btn-primary py-3.5 text-sm font-cyber font-bold tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
             {loading ? (
               <>
                 <Loader2 className="animate-spin" size={16} />
-                <span>ПРОВЕРКА...</span>
+                <span>РЕГИСТРАЦИЯ...</span>
               </>
             ) : isAccepted ? (
               <>

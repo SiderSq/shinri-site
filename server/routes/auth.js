@@ -7,10 +7,18 @@ const router = express.Router();
 
 router.post('/login', (req, res) => {
   const ip = getClientIp(req);
-  const { code } = req.body;
+  const { code, playerName } = req.body;
 
-  if (!code || typeof code !== 'string') {
+  if (!code || typeof code !== 'string' || !code.trim()) {
     return res.status(400).json({ success: false, error: 'Код доступа обязателен.' });
+  }
+
+  const cleanName = (typeof playerName === 'string' ? playerName.trim() : '').slice(0, 50);
+  if (!cleanName) {
+    return res.status(400).json({
+      success: false,
+      error: 'Укажите ваше имя для текущей судебной сессии.'
+    });
   }
 
   const caseData = getCase();
@@ -22,8 +30,9 @@ router.post('/login', (req, res) => {
     let session = getSession(sessionId);
 
     if (!session) {
-      sessionId = createSessionToken('AUTHENTICATED', ip);
+      sessionId = createSessionToken('AUTHENTICATED', ip, cleanName);
     } else {
+      session.playerName = cleanName;
       updateSessionState(sessionId, 'AUTHENTICATED');
     }
 
@@ -33,16 +42,17 @@ router.post('/login', (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    addAudit(ip, 'AUTH_SUCCESS', 'Успешная авторизация по коду доступа.');
+    addAudit(ip, 'AUTH_SUCCESS', `Вход в систему: студент "${cleanName}" успешно авторизован.`, cleanName);
     return res.json({
       success: true,
       sessionId,
+      playerName: cleanName,
       state: 'AUTHENTICATED',
       message: 'КЛЮЧ ПРИНЯТ.'
     });
   }
 
-  addAudit(ip, 'AUTH_FAILED', `Неудачная попытка входа: "${inputCode.substring(0, 15)}"`);
+  addAudit(ip, 'AUTH_FAILED', `Неудачная попытка входа: код "${inputCode.substring(0, 15)}" (имя: "${cleanName}")`, cleanName);
   return res.status(401).json({
     success: false,
     error: 'ОШИБКА ДОСТУПА. КЛЮЧ НЕ РАСПОЗНАН СИСТЕМОЙ.'

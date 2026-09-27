@@ -21,7 +21,8 @@ import {
   X,
   Upload,
   Camera,
-  RotateCcw
+  RotateCcw,
+  UserCheck
 } from 'lucide-react';
 import { SoundFX } from '../SoundFX';
 
@@ -36,6 +37,7 @@ export default function AdminDashboard({ onClose }) {
   const [caseData, setCaseData] = useState(null);
   const [locks, setLocks] = useState([]);
   const [audit, setAudit] = useState([]);
+  const [playerSessions, setPlayerSessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
   const [saveErrorMsg, setSaveErrorMsg] = useState('');
@@ -89,6 +91,17 @@ export default function AdminDashboard({ onClose }) {
       });
       const auditJson = await auditRes.json();
       if (auditJson.success) setAudit(auditJson.audit);
+
+      // 4. Fetch Active Player Sessions
+      try {
+        const sessRes = await fetch('/api/admin/sessions', {
+          headers: { 'x-admin-token': authToken }
+        });
+        const sessJson = await sessRes.json();
+        if (sessJson.success) setPlayerSessions(sessJson.sessions || []);
+      } catch (sessErr) {
+        console.warn('Failed to fetch player sessions:', sessErr);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -393,6 +406,7 @@ export default function AdminDashboard({ onClose }) {
   // Admin tabs navigation
   const adminTabs = [
     { id: 'case', label: 'Параметры Дела', icon: Database },
+    { id: 'players', label: `Игроки (${playerSessions.length})`, icon: UserCheck, highlight: playerSessions.length > 0 },
     { id: 'documents', label: 'Файл Монокумы', icon: FileText },
     { id: 'media', label: 'Фото и Скриншоты', icon: ImageIcon },
     { id: 'suspects', label: 'Подозреваемые и Загадки', icon: Users },
@@ -1475,7 +1489,90 @@ export default function AdminDashboard({ onClose }) {
           </div>
         )}
 
-        {/* Tab 7: Audit Log */}
+        {/* Tab: Active Players */}
+        {activeTab === 'players' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-cyber font-bold text-white text-base flex items-center gap-2">
+                <UserCheck className="text-[#00f3ff]" size={18} />
+                <span>СПИСОК УЧАСТНИКОВ СУДЕБНОЙ СЕССИИ ({playerSessions.length})</span>
+              </h2>
+              <button
+                onClick={loadAllAdminData}
+                className="dr-btn py-1.5 px-3 text-xs font-mono flex items-center gap-1.5"
+              >
+                <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                <span>ОБНОВИТЬ СПИСОК</span>
+              </button>
+            </div>
+
+            {playerSessions.length > 0 ? (
+              <div className="cyber-panel bg-[#090c14] border border-[#1e2740] overflow-x-auto">
+                <table className="w-full text-left font-mono text-xs">
+                  <thead>
+                    <tr className="bg-[#0f1424] text-gray-400 border-b border-[#1f2945]">
+                      <th className="p-3">ИМЯ УЧАСТНИКА</th>
+                      <th className="p-3">IP АДРЕС</th>
+                      <th className="p-3">СТАТУС В СЕССИИ</th>
+                      <th className="p-3">ПОДОЗРЕВАЕМЫЕ</th>
+                      <th className="p-3">ДЕБАТЫ</th>
+                      <th className="p-3">ПОСЛЕДНЯЯ АКТИВНОСТЬ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#151c2e]">
+                    {playerSessions.map((player) => (
+                      <tr key={player.sessionId} className="hover:bg-[#111728]">
+                        <td className="p-3 whitespace-nowrap">
+                          <span className="px-2.5 py-1 rounded bg-[#00f3ff]/15 border border-[#00f3ff]/40 text-[#00f3ff] font-bold">
+                            {player.playerName}
+                          </span>
+                        </td>
+                        <td className="p-3 text-gray-300 font-mono whitespace-nowrap">
+                          {player.ip}
+                        </td>
+                        <td className="p-3 whitespace-nowrap">
+                          {player.state === 'SOLVED' ? (
+                            <span className="px-2 py-0.5 rounded bg-[#00ff88]/20 border border-[#00ff88] text-[#00ff88] font-bold">
+                              РАСКРЫТО (ПОБЕДА)
+                            </span>
+                          ) : player.state === 'RECOVERED' ? (
+                            <span className="px-2 py-0.5 rounded bg-[#00f3ff]/20 border border-[#00f3ff] text-[#00f3ff]">
+                              В РАССЛЕДОВАНИИ
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500 text-amber-400">
+                              АВТОРИЗОВАН
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-gray-300 whitespace-nowrap">
+                          {player.unlockedSuspectsCount} открыто
+                        </td>
+                        <td className="p-3 whitespace-nowrap">
+                          {player.debateResolved ? (
+                            <span className="text-[#00ff88] font-bold">ПРОЙДЕНЫ</span>
+                          ) : (
+                            <span className="text-gray-500">В процессе</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-gray-400 whitespace-nowrap">
+                          {player.updatedAt ? new Date(player.updatedAt).toLocaleTimeString() : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-8 bg-[#0a0d16] border border-gray-800 text-center font-mono text-xs text-gray-400">
+                <Users size={32} className="mx-auto text-gray-500 mb-2" />
+                <span>Пока никто не зашёл в текущую судебную сессию.</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Audit Log */}
         {activeTab === 'audit' && (
           <div className="space-y-4">
             <h2 className="font-cyber font-bold text-white text-base">
@@ -1486,6 +1583,7 @@ export default function AdminDashboard({ onClose }) {
                 <thead>
                   <tr className="bg-[#0f1424] text-gray-400 border-b border-[#1f2945]">
                     <th className="p-2.5">ВРЕМЯ</th>
+                    <th className="p-2.5">ИГРОК</th>
                     <th className="p-2.5">IP УЗЛА</th>
                     <th className="p-2.5">ДЕЙСТВИЕ</th>
                     <th className="p-2.5">ПОДРОБНОСТИ</th>
@@ -1496,6 +1594,15 @@ export default function AdminDashboard({ onClose }) {
                     <tr key={entry.id || entry.time} className="hover:bg-[#111728]">
                       <td className="p-2.5 text-gray-400 whitespace-nowrap">
                         {new Date(entry.time).toLocaleTimeString()}
+                      </td>
+                      <td className="p-2.5 whitespace-nowrap">
+                        {entry.playerName ? (
+                          <span className="px-2 py-0.5 rounded bg-[#00f3ff]/15 border border-[#00f3ff]/40 text-[#00f3ff] font-bold">
+                            {entry.playerName}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
                       </td>
                       <td className="p-2.5 text-[#00f3ff] whitespace-nowrap">
                         {entry.ip}
