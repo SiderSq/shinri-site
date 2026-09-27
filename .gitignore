@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+client/node_modules/
+
+# Local tools & executables
+tools/
+playit*
+*.exe
+
+# Environment variables
+.env
+.env.local
+
+# Logs and system
+*.log
+npm-debug.log*
+.agents/
+.gemini/
+
+# OS files
+Thumbs.db
+.DS_Store

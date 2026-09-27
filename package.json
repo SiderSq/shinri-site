@@ -1,0 +1,32 @@
+{
+  "name": "shinri-trial-site",
+  "version": "1.0.0",
+  "description": "Danganronpa ARG investigation site for Shinri Trial roleplay by Nagito Komaeda",
+  "main": "server/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/server.js",
+    "build": "npm --prefix client install && npm --prefix client run build",
+    "dev": "node server/server.js",
+    "client:dev": "npm run dev --prefix client",
+    "test": "node tests/e2e/runner.mjs",
+    "test:strict": "node tests/e2e/runner.mjs --strict"
+  },
+  "keywords": [
+    "danganronpa",
+    "shinri-trial",
+    "nagito-komaeda",
+    "arg",
+    "investigation"
+  ],
+  "author": "Nagito Komaeda / Shinri Trial",
+  "license": "ISC",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^11.1.0"
+  }
+}
