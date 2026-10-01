@@ -1,0 +1,148 @@
+.lab-v2 { --lab-canvas:#07080d; --lab-panel:#111727; --lab-line:#35425b; --lab-text:#edf3fc; --lab-muted:#a5b4ca; --lab-cyan:#65e2ec; --lab-pink:#ff398f; --lab-warning:#ffc45e; --lab-success:#83e4b5; max-width:1220px; margin:auto; color:var(--lab-text); font-family:'Golos Text',system-ui,sans-serif; }
+.lab-v2 button,.lab-v2 select,.lab-v2 input { font:inherit; }
+.lab-header { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:24px; }
+.lab-header h2 { margin:0 0 8px; font-size:clamp(25px,3vw,34px); font-weight:650; letter-spacing:-.03em; }
+.lab-header p { color:var(--lab-muted); margin:0; max-width:60ch; }
+.lab-total { display:flex; flex-direction:column; text-align:right; min-width:90px; }
+.lab-total strong { font-size:28px; color:var(--lab-cyan); }
+.lab-total strong span { font-size:16px; color:var(--lab-muted); }
+.lab-total > span { font-size:14px; color:var(--lab-muted); }
+.lab-workstation { display:grid; grid-template-columns:216px minmax(0,1fr); border:1px solid var(--lab-line); border-radius:12px; overflow:hidden; background:var(--lab-panel); }
+.lab-rail { display:flex; flex-direction:column; gap:4px; padding:12px; background:var(--lab-canvas); border-right:1px solid var(--lab-line); }
+.lab-rail button { display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; padding:16px 10px; border-left:3px solid transparent; border-radius:4px; color:var(--lab-muted); transition:background-color .15s; }
+.lab-rail button > svg { flex-shrink:0; margin-top:2px; }
+.lab-rail button > span { min-width:0; }
+.lab-rail button strong { display:block; font-size:15px; color:var(--lab-text); font-weight:550; }
+.lab-rail button small { display:block; font-size:13px; line-height:1.5; margin-top:5px; }
+.lab-rail button[aria-current] { border-left-color:var(--lab-cyan); background:#65e2ec10; color:var(--lab-cyan); }
+.rail-progress { display:flex; gap:5px; margin-top:12px; }
+.rail-progress i { display:block; width:18px; height:3px; background:var(--lab-line); border-radius:2px; }
+.rail-progress i.filled { background:var(--lab-success); }
+.rail-check { color:var(--lab-success); margin-left:auto; }
+.lab-mobile-selector { display:none; }
+.lab-bench { padding:24px; min-width:0; }
+.lab-task-header { display:flex; flex-wrap:wrap; align-items:center; gap:16px; justify-content:space-between; padding-bottom:20px; border-bottom:1px solid var(--lab-line); }
+.lab-task-header h3 { font-size:22px; margin:6px 0 0; font-weight:600; }
+.task-stage { color:var(--lab-cyan); font-size:14px; }
+.stage-track { display:flex; flex-wrap:wrap; gap:12px; padding:0; list-style:none; margin:0; }
+.stage-track li { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--lab-muted); }
+.stage-track li > span { width:22px; height:22px; display:grid; place-items:center; border:1px solid var(--lab-line); border-radius:50%; font-size:12px; }
+.stage-track .stage-current { color:var(--lab-cyan); }
+.stage-track .stage-current > span { border-color:var(--lab-cyan); }
+.stage-track .stage-done > span { border-color:var(--lab-success); background:#83e4b518; color:var(--lab-success); }
+.instrument-instruction { color:var(--lab-text); font-size:16px; max-width:70ch; margin:20px 0; }
+.instrument-layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(240px,1fr); gap:24px; min-width:0; padding:0; margin:0; border:0; }
+.instrument-scene { border:1px solid var(--lab-line); background:#080d17; border-radius:8px; padding:20px; min-width:0; align-self:start; }
+.scene-label { display:flex; justify-content:space-between; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:20px; font-size:14px; color:var(--lab-muted); }
+.scene-label > span:last-child { color:var(--lab-cyan); font-size:13px; }
+.scene-caption { font-size:14px!important; color:var(--lab-muted); margin:16px 0 0; }
+.instrument-controls { min-width:0; display:flex; flex-direction:column; gap:16px; align-items:stretch; }
+.lab-readout { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:14px 0; border-bottom:1px solid var(--lab-line); }
+.lab-readout > span { font-size:14px; color:var(--lab-muted); }
+.lab-readout strong { font-size:30px; line-height:1.2; font-weight:500; }
+.lab-readout small { font-size:15px; font-weight:400; margin-left:7px; color:var(--lab-muted); }
+.lab-readout.readout-safe strong { color:var(--lab-success); }
+.instrument-rule { color:var(--lab-muted); font-size:14px; line-height:1.55; border-left:2px solid var(--lab-cyan); padding-left:12px; }
+.instrument-rule strong { color:var(--lab-text); font-weight:600; }
+.instrument-rule p,.instrument-rule ul { margin:8px 0 0; font-size:14px!important; }
+.instrument-rule ul { padding-left:18px; }
+.instrument-rule li+li { margin-top:8px; }
+.control-note { font-size:14px!important; color:var(--lab-muted); margin:0; }
+.lab-primary,.lab-secondary { display:inline-flex; align-items:center; justify-content:center; gap:10px; min-width:44px; min-height:48px!important; padding:12px 16px; border:1px solid var(--lab-line); border-radius:6px; font-size:15px; line-height:1.4; text-align:center; font-weight:550; }
+.lab-primary { background:var(--lab-cyan); color:var(--lab-canvas); border-color:var(--lab-cyan); }
+.lab-primary:hover { background:#a0eef4; }
+.lab-secondary { background:transparent; color:var(--lab-text); }
+.lab-secondary:hover { background:#edf3fc08; }
+.lab-secondary[aria-pressed=true] { color:var(--lab-cyan); border-color:var(--lab-cyan); }
+.lab-v2 button:disabled { opacity:.45; cursor:not-allowed; }
+.instrument-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:24px; padding-top:20px; border-top:1px solid var(--lab-line); }
+.instrument-feedback { display:flex; align-items:flex-start; gap:12px; border-left:3px solid var(--lab-warning); background:#ffc45e0b; padding:14px 16px; margin-top:20px; font-size:15px; color:var(--lab-text); }
+.instrument-feedback svg { flex-shrink:0; color:var(--lab-warning); margin-top:1px; }
+.instrument-feedback.is-success { border-left-color:var(--lab-success); background:#83e4b50b; }
+.instrument-feedback.is-success svg { color:var(--lab-success); }
+.instrument-hint { padding:16px; margin-top:16px; font-size:14px; color:var(--lab-muted); background:#edf3fc06; border-radius:6px; }
+.lab-model-note { margin:24px 0 0; font-size:12px!important; color:var(--lab-muted); max-width:75ch; }
+.circuit-board { display:grid; grid-template-columns:repeat(var(--board-cols),minmax(0,1fr)); gap:8px; }
+.circuit-node { position:relative; display:flex; flex-direction:column; align-items:center; gap:4px; padding:0 0 10px; color:#7187a8; background:var(--lab-panel); border:1px solid var(--lab-line); border-radius:6px; min-width:0; }
+.circuit-node svg { display:block; width:100%; aspect-ratio:1; }
+.circuit-node span { font-size:14px; color:var(--lab-text); }
+.circuit-node small { font-size:11px; line-height:1.4; padding:0 4px; color:var(--lab-muted); }
+.circuit-node.is-powered { color:var(--lab-cyan); background:#65e2ec0c; }
+.circuit-node.is-damaged { color:var(--lab-warning); border-style:dashed; }
+.lab-v2 .circuit-node:disabled { opacity:1; cursor:default; }
+.meter-track { height:6px; background:var(--lab-line); border-radius:4px; overflow:hidden; }
+.meter-track span { display:block; height:100%; background:var(--lab-cyan); }
+.spectrum-chart { display:block; width:100%; }
+.spectrum-values { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.spectrum-values .lab-readout { flex-direction:column; align-items:flex-start; }
+.spectrum-values .lab-readout strong { font-size:25px; }
+.sample-observation { font-size:14px!important; min-height:44px; color:var(--lab-muted); }
+.sample-list { display:flex; flex-direction:column; margin-top:16px; }
+.sample-row { display:flex; flex-wrap:wrap; gap:8px; padding:10px 0; border-top:1px solid var(--lab-line); align-items:center; }
+.sample-row > button { flex:1 1 140px; text-align:left; padding:8px; border-left:2px solid transparent; }
+.sample-row > button small { display:block; font-size:12px; margin-top:4px; color:var(--lab-muted); }
+.sample-active > button { border-left-color:var(--lab-cyan); background:#65e2ec0a; }
+.sample-row label,.overlay-switch { display:flex; align-items:center; gap:10px; min-height:44px; font-size:14px; padding:8px; cursor:pointer; }
+.sample-row input,.overlay-switch input { width:20px; height:20px; accent-color:var(--lab-cyan); }
+.causal-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; }
+.causal-list li { display:grid; grid-template-columns:auto minmax(0,1fr); gap:12px; padding:16px 12px; border:1px solid var(--lab-line); border-radius:6px; background:var(--lab-panel); }
+.event-time { font-size:14px; color:var(--lab-warning); margin-top:2px; white-space:nowrap; }
+.event-copy { min-width:0; }
+.event-copy strong { font-size:15px; display:block; line-height:1.4; }
+.event-copy > span { font-size:12px; color:var(--lab-muted); display:block; margin:6px 0; }
+.event-copy p { font-size:14px!important; color:var(--lab-muted); margin:0; }
+.event-move { grid-column:2; display:flex; gap:10px; justify-content:flex-end; }
+.event-move button { width:44px; height:44px; border:1px solid var(--lab-line); border-radius:5px; display:grid; place-items:center; }
+.trap-diagram { display:block; width:100%; }
+.trap-diagram g { transition:transform .3s cubic-bezier(.2,.7,.2,1); }
+.force-gauge { height:10px; margin-top:20px; background:linear-gradient(90deg,var(--lab-line) 30%,var(--lab-success) 30%,var(--lab-success) 36.6%,var(--lab-line) 36.6%); position:relative; }
+.force-gauge > span { position:absolute; top:-3px; width:3px; height:16px; background:var(--lab-text); }
+.microscope-pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.microscope-pair > div { min-width:0; background:var(--lab-panel); border:1px solid var(--lab-line); border-radius:6px; padding:10px; }
+.microscope-pair > div > span { font-size:13px; color:var(--lab-muted); display:block; }
+.ridge-view { width:100%; display:block; }
+.microscope-empty { display:grid; place-items:center; align-content:center; aspect-ratio:200/170; color:var(--lab-muted); }
+.microscope-empty p { font-size:13px!important; text-align:center; }
+.comparison-results { display:flex; flex-wrap:wrap; gap:12px; padding:16px 0; font-size:14px; }
+.instrument-data { font-size:14px; color:var(--lab-muted); }
+.instrument-data summary { cursor:pointer; min-height:44px; display:flex; align-items:center; text-decoration:underline; text-underline-offset:3px; }
+.instrument-data p { font-size:14px!important; }
+.tool-options { display:flex; flex-direction:column; gap:8px; }
+.tool-options button { padding:12px; min-height:48px; text-align:left; display:flex; align-items:center; gap:10px; border:1px solid var(--lab-line); border-radius:6px; }
+.tool-options button svg { flex-shrink:0; }
+.tool-options button[aria-pressed=true] { border-color:var(--lab-cyan); color:var(--lab-cyan); background:#65e2ec0a; }
+.window-tabs { display:flex; gap:12px; margin-bottom:16px; }
+.window-tabs button { display:flex; gap:8px; align-items:center; padding:8px 12px; border-bottom:2px solid var(--lab-line); }
+.window-tabs button[aria-pressed=true] { border-color:var(--lab-cyan); color:var(--lab-cyan); }
+.lab-certificate { padding:40px 0; display:flex; flex-direction:column; align-items:flex-start; gap:16px; }
+.lab-certificate > svg { color:var(--lab-success); }
+.lab-certificate h4 { font-size:26px; margin:0; }
+.lab-certificate p { margin:0; max-width:55ch; color:var(--lab-muted); }
+.certificate-fragment { display:flex; align-items:center; gap:24px; padding:16px 0; }
+.certificate-fragment strong { font-size:36px; color:var(--lab-cyan); }
+.lab-footer { display:flex; flex-wrap:wrap; gap:24px; align-items:center; justify-content:space-between; padding:20px 0; }
+.lab-footer > div > span { font-size:13px; color:var(--lab-muted); }
+.lab-fragments { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.lab-fragments span { min-width:36px; min-height:36px; padding:8px; display:grid; place-items:center; color:var(--lab-cyan); border-bottom:2px solid var(--lab-line); font-size:16px; }
+.lab-audio-link { display:flex; align-items:center; gap:8px; min-height:44px; color:var(--lab-muted); font-size:14px; text-decoration:underline; text-underline-offset:4px; }
+.lab-retry { font-size:14px!important; color:var(--lab-warning); }
+.lab-loading { padding:24px; }
+.lab-v2 .range-control-values { flex-wrap:wrap; }
+.lab-v2 .range-control-values input[type=number] { width:74px; }
+.lab-v2 .range-control input:disabled { opacity:.45; }
+@media(max-width:1200px) { .instrument-layout { grid-template-columns:1fr; } .instrument-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; } .instrument-controls > .instrument-rule,.instrument-controls > .tool-options { grid-column:1/-1; } .instrument-controls > button { align-self:end; } }
+@media(max-width:767px) { .lab-workstation { grid-template-columns:1fr; } .lab-rail { display:none; } .lab-mobile-selector { display:block; padding:16px; background:var(--lab-canvas); border-bottom:1px solid var(--lab-line); } .lab-mobile-selector label { display:block; font-size:14px; color:var(--lab-muted); margin-bottom:8px; } .lab-mobile-selector select { width:100%; padding:12px; min-height:48px; font-size:16px; background:var(--lab-panel); color:var(--lab-text); border:1px solid var(--lab-line); border-radius:6px; } .lab-bench { padding:16px; } .lab-header { gap:16px; align-items:flex-start; } .lab-header p { font-size:14px!important; } .lab-total { min-width:70px; } .instrument-scene { padding:14px; } .instrument-layout { gap:20px; } .instrument-controls { display:flex; } .lab-task-header h3 { font-size:20px; } .stage-track { gap:8px; } .stage-track li { font-size:11px; } .stage-track li>span { width:20px; height:20px; } .microscope-pair { grid-template-columns:1fr; } .circuit-board { gap:6px; } .circuit-node small { font-size:11px; } .circuit-node span { font-size:12px; } .lab-model-note { font-size:12px!important; } .instrument-actions .lab-primary { width:100%; } .lab-footer { gap:16px; } }
+@media(prefers-reduced-motion:reduce) { .trap-diagram g { transition:none; } }
+
+.circuit-node { aspect-ratio:1; padding:0; display:block; }
+.circuit-node svg { position:absolute; inset:0; width:100%; height:100%; }
+.circuit-node > span { position:absolute; left:6px; bottom:6px; font-size:12px; padding:0; line-height:1; }
+.circuit-node > small { position:absolute; right:6px; bottom:6px; padding:0; font-size:11px; line-height:1; }
+
+.lab-total > span { white-space:nowrap; }
+@media(max-width:767px) { .lab-total { min-width:84px; } .lab-header > div:first-child { min-width:0; } .instrument-controls > button { align-self:stretch; } }
+.lab-rail button { position:relative; }
+.lab-rail button strong { padding-right:18px; }
+.lab-rail .rail-check { position:absolute; top:17px; right:6px; }
+.lab-v2 .tool-options { align-items:stretch; }
+.lab-v2 .tool-options button { width:100%; }

@@ -33,8 +33,7 @@ export default function NameReconstruction({
         if (parsed.trap) map[3] = parsed.trap;
         if (parsed.workbench) {
           const parts = String(parsed.workbench).split(/[\s&]+/);
-          if (parts[0]) map[4] = parts[0];
-          if (parts[1]) map[5] = parts[1];
+          parts.join('').split('').forEach((char, i) => { map[4 + i] = char; });
         }
         return map;
       }
@@ -58,8 +57,7 @@ export default function NameReconstruction({
           if (parsed.trap) map[3] = parsed.trap;
           if (parsed.workbench) {
             const parts = String(parsed.workbench).split(/[\s&]+/);
-            if (parts[0]) map[4] = parts[0];
-            if (parts[1]) map[5] = parts[1];
+            parts.join('').split('').forEach((char, i) => { map[4 + i] = char; });
           }
           setLabLetters(map);
         }

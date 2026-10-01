@@ -7,6 +7,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import archiveRoutes from './archive/routes.js';
+import labRoutes from './lab/routes.js';
 import { getCase } from './storage.js';
 import authRoutes from './routes/auth.js';
 import investigationRoutes from './routes/investigation.js';
@@ -53,6 +54,7 @@ app.use('/uploads', express.static(uploadsPath));
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/archive', archiveRoutes);
+app.use('/api/investigation/lab', labRoutes);
 app.use('/api/investigation', investigationRoutes);
 app.use('/api/admin', adminRoutes);
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
+import AudioPreview from './components/AudioPreview';
 import CrtOverlay from './components/CrtOverlay';
 import GatewayScreen from './components/GatewayScreen';
 import BrokenScreen from './components/BrokenScreen';
@@ -21,6 +22,10 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import { SoundFX } from './components/SoundFX';
 
 export default function App() {
+  return window.location.pathname === '/audio-preview' ? <AudioPreview /> : <TerminalApp />;
+}
+
+function TerminalApp() {
   // Global player workflow state: 'LOADING' | 'LOCKED' | 'NEW' | 'AUTHENTICATED' | 'RECOVERING' | 'RECOVERED' | 'SOLVED'
   const [appState, setAppState] = useState('LOADING');
   const [clientIp, setClientIp] = useState('127.0.0.1');

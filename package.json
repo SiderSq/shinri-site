@@ -13,7 +13,8 @@
     "test:strict": "node --test --test-concurrency=1 tests/archive/*.test.mjs",
     "test:legacy": "node tests/e2e/runner.mjs",
     "test:ui": "node tests/archive/browser.mjs",
-    "test:design": "node tests/design/ui.mjs"
+    "test:design": "node tests/design/ui.mjs",
+    "test:lab": "node --test --test-concurrency=1 tests/lab/*.test.mjs"
   },
   "keywords": [
     "danganronpa",

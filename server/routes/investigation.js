@@ -1,4 +1,5 @@
 import express from 'express';
+import { ensureLab, GAME_IDS } from '../lab/engine.js';
 import crypto from 'node:crypto';
 import { getCase, lockIp, isIpLocked, addAudit } from '../storage.js';
 import { getSession, updateSessionState, createSessionToken, getUnlockedSuspectsInSession, unlockSuspectInSession } from '../utils/session.js';
@@ -397,6 +398,8 @@ router.post('/verify-killer', (req, res) => {
   }
 
   const caseData = getCase();
+  const lab = ensureLab(session, caseData);
+  if (!GAME_IDS.every(id => lab.progress[id] === 3)) return res.status(403).json({ success: false, error: 'Сначала подтвердите пять лабораторных заключений.' });
   const target = String(caseData.killer || 'КИРУМИ').trim().toUpperCase();
   const submitted = answer.trim().toUpperCase();
   const killerFullName = String(caseData.killerFullName || '').trim().toUpperCase();
@@ -603,55 +606,6 @@ router.get('/round-time', (req, res) => {
 export function clearIssuedCertificates() {
   issuedVerdictCertificates.clear();
 }
-
-// POST /api/investigation/lab/solve-minigame
-// Unlocks corresponding dynamic letter from the configured killer without exposing full word
-router.post('/lab/solve-minigame', (req, res) => {
-  const { minigameId } = req.body || {};
-  if (!minigameId) {
-    return res.status(400).json({ success: false, error: 'Идентификатор мини-игры обязателен.' });
-  }
-
-  const caseData = getCase();
-  const killer = String(caseData.killer || 'КИРУМИ').trim().toUpperCase();
-  const chars = killer.split('');
-
-  let unlockedLetter = '';
-  switch (minigameId) {
-    case 'circuits':
-    case 'circuit':
-      unlockedLetter = chars[0] || 'А';
-      break;
-    case 'spectrometer':
-    case 'uv':
-      unlockedLetter = chars[1] || chars[0] || 'Б';
-      break;
-    case 'timeline':
-      unlockedLetter = chars[2] || chars[1] || 'В';
-      break;
-    case 'trap':
-      unlockedLetter = chars[3] || chars[2] || 'Г';
-      break;
-    case 'workbench':
-      if (chars.length > 5) {
-        unlockedLetter = `${chars[4]} & ${chars.slice(5).join('')}`;
-      } else if (chars.length === 5) {
-        unlockedLetter = chars[4];
-      } else {
-        unlockedLetter = chars[chars.length - 1] || 'Д';
-      }
-      break;
-    default:
-      return res.status(400).json({ success: false, error: 'Неизвестная мини-игра.' });
-  }
-
-  return res.json({
-    success: true,
-    minigameId,
-    letter: unlockedLetter,
-    killerLength: killer.length
-  });
-});
 
 // POST /api/investigation/verdict-certificate
 // Generates HMAC-SHA256 cryptographic seal and formatted Discord report

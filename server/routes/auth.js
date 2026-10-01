@@ -32,7 +32,7 @@ router.post('/login', (req, res) => {
     if (!session) {
       sessionId = createSessionToken('AUTHENTICATED', ip, cleanName);
     } else {
-      delete session.archiveVersion; session.archiveProgress = []; session.archiveVerdict = null;
+      delete session.labV2; delete session.archiveVersion; session.archiveProgress = []; session.archiveVerdict = null;
       session.playerName = cleanName;
       updateSessionState(sessionId, 'AUTHENTICATED');
     }
