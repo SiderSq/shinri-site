@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { GAME_IDS, makeChallenge, evaluateChallenge, publicLab, ensureLab, rewardLetter } from '../../server/lab/engine.js';
+import { circuitReading, comparisonScore, trapReading } from '../../shared/lab-model.js';
+import { validProof } from './helpers.mjs';
+for (const gameId of GAME_IDS) for (let stage = 0; stage < 3; stage++) test(`${gameId} / stage ${stage + 1}: valid proof accepted across seeds`, () => {
+  for (let i = 0; i < 12; i++) { const ch = makeChallenge(gameId, stage, `session-${i}`); assert.equal(evaluateChallenge(ch, validProof(ch)).success, true); assert.equal(evaluateChallenge(ch, {}).success, false); }
+});
+test('circuit models reciprocal ports, not per-tile target equality', () => { const ch = makeChallenge('circuit',1); const p = validProof(ch); assert.equal(circuitReading(ch,p).current,3); p.rotations[1]=1; assert.equal(evaluateChallenge(ch,p).success,false); p.rotations[1]=0; p.voltage=200; assert.deepEqual(evaluateChallenge(ch,p).fields,['voltage']); });
+test('damaged powered branch rejected', () => { const ch = makeChallenge('circuit',2); ch.tiles[1].damaged=true; assert.equal(evaluateChallenge(ch,validProof(ch)).success,false); });
+test('invalid numeric inputs rejected', () => { for (const n of [NaN, Infinity, '1200', -1, 99999]) { const ch=makeChallenge('circuit',0), p=validProof(ch); p.voltage=n; assert.equal(evaluateChallenge(ch,p).success,false); } });
+test('UV requires calibration and excludes spectral interference', () => { const ch=makeChallenge('uv',2), p=validProof(ch); assert.equal(p.sampleIds.length,2); p.sampleIds.push('cleaner'); assert.equal(evaluateChallenge(ch,p).success,false); p.sampleIds=validProof(ch).sampleIds; p.zeroOffset=0; assert.deepEqual(evaluateChallenge(ch,p).fields,['zeroOffset']); });
+test('duplicate evidence and missing chronology rejected', () => { const ch=makeChallenge('uv',0), p=validProof(ch); p.sampleIds.push(p.sampleIds[0]); assert.equal(evaluateChallenge(ch,p).success,false); const time=makeChallenge('timeline',2), order=validProof(time); order.order.reverse(); assert.equal(evaluateChallenge(time,order).success,false); });
+test('trap enforces safe priming plus compensated final load', () => { const ch=makeChallenge('trap',2), p=validProof(ch); assert.equal(trapReading(ch,p),50); p.primingRelease=20; assert.deepEqual(evaluateChallenge(ch,p).fields,['pin']); p.primingRelease=85; p.damper=0; assert.equal(evaluateChallenge(ch,p).success,false); });
+test('microscope requires both measurements, focus and actual ridge geometry', () => { const ch=makeChallenge('workbench',2), p=validProof(ch); assert.equal(comparisonScore(ch,p,'A'),100); p.checkedWindows=['A']; assert.deepEqual(evaluateChallenge(ch,p).fields,['windows']); p.checkedWindows=ch.windows; p.focus=20; assert.equal(evaluateChallenge(ch,p).success,false); });
+test('opaque version stable until case changes; no letters before completion', () => { const session={}, c={ caseId:'demo', killer:'АБВГДЕ', documents:[] }; const a=publicLab(session,c), b=publicLab(session,c); assert.equal(a.version,b.version); assert.deepEqual(a.letters,{}); assert.ok(!JSON.stringify(a).includes('fingerprint')); ensureLab(session,c).progress.circuit=3; const next=publicLab(session,{...c,killer:'ЖЗИКЛМ'}); assert.notEqual(next.version,a.version); assert.equal(next.progress.circuit,0); });
+test('reward tail supports arbitrary word length', () => { assert.equal(rewardLetter('workbench','АБВГДЕЖЗ'),'Д & Е & Ж & З'); });
