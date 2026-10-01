@@ -53,11 +53,7 @@ app.use('/uploads', express.static(uploadsPath));
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/archive', archiveRoutes);
-// Retire legacy answer/letter endpoints for configurable rounds; no bypass via old UI.
-app.use('/api/investigation', (req, res, next) => {
-  if (getCase().archiveRound && !['/status', '/round-time'].includes(req.path)) return res.status(410).json({ error: 'Используйте доказательный архив /api/archive.' });
-  next();
-}, investigationRoutes);
+app.use('/api/investigation', investigationRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Serve frontend static build if exists
