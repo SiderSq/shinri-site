@@ -87,6 +87,218 @@ class AdminTabErrorBoundary extends Component {
   }
 }
 
+function AdminMediaCard({
+  item,
+  isEditing,
+  onToggleEdit,
+  onSave,
+  onDelete,
+  onView
+}) {
+  const [draft, setDraft] = useState({ ...item });
+
+  useEffect(() => {
+    setDraft({ ...item });
+  }, [item, isEditing]);
+
+  const imageSrc = isEditing ? (draft.customImageUrl || '') : (item.customImageUrl || '');
+  const currentTitle = isEditing ? draft.title : item.title;
+  const currentTag = isEditing ? draft.tag : item.tag;
+  const currentTime = isEditing ? draft.time : item.time;
+  const currentCamera = isEditing ? draft.camera : item.camera;
+  const currentDesc = isEditing ? draft.desc : item.desc;
+  const currentSvgType = item.svgType || 'corpse_trap';
+
+  return (
+    <div className="cyber-panel bg-[#090d19] border border-[#1d2745] hover:border-[#00f3ff]/50 rounded-xl overflow-hidden shadow-lg transition-all duration-200 flex flex-col justify-between group">
+      {/* Image Preview Thumbnail with Badges */}
+      <div className="relative h-44 bg-[#050810] flex items-center justify-center overflow-hidden border-b border-[#18223c]">
+        {imageSrc ? (
+          <img
+            src={imageSrc}
+            alt={currentTitle || 'Улика'}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+            onClick={() => onView(imageSrc, currentTitle)}
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center p-4 text-center text-gray-500 space-y-1">
+            <ImageIcon size={32} className="text-[#00f3ff]/50 mb-1" />
+            <span className="text-[11px] font-bold text-gray-400">{currentTitle || 'Схематичный снимок'}</span>
+            <span className="text-[10px] text-gray-600">SVG: {currentSvgType}</span>
+          </div>
+        )}
+
+        {/* Top Badges (Category & Time) */}
+        <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
+          <span className="bg-black/80 backdrop-blur-sm text-[#00f3ff] text-[10px] px-2 py-0.5 rounded border border-[#00f3ff]/40 font-bold shadow">
+            🏷️ {currentTag || 'Улика'}
+          </span>
+        </div>
+
+        <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+          <span className="bg-black/80 backdrop-blur-sm text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-500/40 font-bold shadow">
+            ⏱️ {currentTime || '21:40'}
+          </span>
+        </div>
+
+        {/* Lightbox Trigger on Hover */}
+        {imageSrc && (
+          <button
+            type="button"
+            onClick={() => onView(imageSrc, currentTitle)}
+            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-cyber font-bold gap-1.5 backdrop-blur-[2px]"
+            title="Открыть полноразмерное изображение"
+          >
+            <Eye size={16} className="text-[#00f3ff]" />
+            <span>ПРОСМОТР</span>
+          </button>
+        )}
+      </div>
+
+      {/* Card Content Details */}
+      <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
+        <div>
+          <div className="flex items-start justify-between gap-2">
+            <h4 className="font-cyber font-bold text-white text-sm group-hover:text-[#00f3ff] transition-colors line-clamp-1">
+              {currentTitle || 'Снимок места преступления'}
+            </h4>
+            <span className="text-[10px] text-gray-500 uppercase shrink-0">
+              #{item.code || item.id}
+            </span>
+          </div>
+
+          <div className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
+            <Camera size={12} className="text-gray-500" />
+            <span>{currentCamera || 'GMod Снимок'}</span>
+          </div>
+
+          {/* Nagito's Quote / Observation */}
+          <div className="mt-2 p-2 bg-[#05070f] border border-[#162035] rounded text-gray-300 text-[11px] italic leading-relaxed">
+            {currentDesc || '«Возможно, этот снимок послужит решающей зацепкой на суде?...»'}
+          </div>
+        </div>
+
+        {/* Card Action Buttons */}
+        <div className="pt-2 border-t border-[#162035] flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={onToggleEdit}
+            className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors ${
+              isEditing
+                ? 'bg-[#00f3ff]/20 text-[#00f3ff] border border-[#00f3ff] font-bold'
+                : 'bg-[#121829] text-gray-300 hover:text-white border border-[#202b48] hover:border-[#00f3ff]'
+            }`}
+          >
+            <Edit3 size={12} />
+            <span>{isEditing ? 'Скрыть редактор' : 'Редактировать'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onDelete(item)}
+            className="p-1.5 text-gray-500 hover:text-red-400 rounded hover:bg-red-500/10 transition-colors"
+            title="Удалить фотоматериал"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+
+      {/* Inline Card Editor Accordion */}
+      {isEditing && (
+        <div className="p-4 bg-[#060914] border-t border-[#00f3ff]/30 space-y-3 animate-fade-in text-xs font-mono">
+          <div className="text-[11px] font-bold text-[#00f3ff] flex items-center gap-1 border-b border-[#1a2542] pb-1.5">
+            <Edit3 size={13} />
+            <span>РЕДАКТИРОВАНИЕ ДАННЫХ СНИМКА:</span>
+          </div>
+
+          <div>
+            <label className="text-gray-400 block mb-1">ЗАГОЛОВОК СНИМКА:</label>
+            <input
+              type="text"
+              value={draft.title || ''}
+              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              className="dr-input py-1 text-xs text-white"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-gray-400 block mb-1">ВРЕМЯ:</label>
+              <input
+                type="text"
+                value={draft.time || ''}
+                onChange={(e) => setDraft({ ...draft, time: e.target.value })}
+                className="dr-input py-1 text-xs text-amber-300"
+              />
+            </div>
+            <div>
+              <label className="text-gray-400 block mb-1">КАТЕГОРИЯ / ТЕГ:</label>
+              <input
+                type="text"
+                value={draft.tag || ''}
+                onChange={(e) => setDraft({ ...draft, tag: e.target.value })}
+                className="dr-input py-1 text-xs text-[#00ff88]"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-gray-400 block mb-1">ИСТОЧНИК / КАМЕРА:</label>
+            <input
+              type="text"
+              value={draft.camera || ''}
+              onChange={(e) => setDraft({ ...draft, camera: e.target.value })}
+              className="dr-input py-1 text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="text-gray-400 block mb-1">URL СКРИНШОТА GMOD (ИЛИ BASE64):</label>
+            <input
+              type="text"
+              value={draft.customImageUrl || ''}
+              placeholder="https://... или /img/..."
+              onChange={(e) => setDraft({ ...draft, customImageUrl: e.target.value })}
+              className="dr-input py-1 text-xs text-blue-300"
+            />
+          </div>
+
+          <div>
+            <label className="text-gray-400 block mb-1">ЗАМЕТКА НАГИТО / ПОЯСНЕНИЕ:</label>
+            <textarea
+              rows={3}
+              value={draft.desc || ''}
+              onChange={(e) => setDraft({ ...draft, desc: e.target.value })}
+              className="dr-input py-1 text-xs resize-none"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onToggleEdit}
+              className="dr-btn py-1 px-3 text-xs text-gray-400 hover:text-white"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              onClick={() => onSave(draft)}
+              className="dr-btn dr-btn-primary py-1 px-3 text-xs font-cyber font-bold"
+            >
+              Сохранить изменения
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard({ onClose }) {
   const [authToken, setAuthToken] = useState(localStorage.getItem('shinri_admin_token') || '');
   const [passwordInput, setPasswordInput] = useState('');
@@ -627,19 +839,37 @@ export default function AdminDashboard({ onClose }) {
     }
   };
 
+  // Stable reference for keyboard shortcuts and handlers
+  const shortcutsRef = useRef({});
+  shortcutsRef.current = {
+    authToken,
+    activeTab,
+    isCharImportModalOpen,
+    isResetModalOpen,
+    caseData,
+    uploadPreview
+  };
+
+  // Focus container ONCE on login/mount, only if user is not already typing in an input
+  useEffect(() => {
+    if (authToken) {
+      const activeEl = document.activeElement;
+      if (!activeEl || (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA')) {
+        dashboardContainerRef.current?.focus();
+      }
+    }
+  }, [authToken]);
+
   // Global Keyboard Shortcuts (Ctrl+V, Ctrl+S, Esc) & Paste Listeners
   useEffect(() => {
     if (!authToken) return;
 
-    // Focus container on mount so key and paste events immediately register
-    dashboardContainerRef.current?.focus();
-
     const handleKeyDown = (e) => {
       // Esc closes modal or dashboard
       if (e.key === 'Escape') {
-        if (isCharImportModalOpen) {
+        if (shortcutsRef.current.isCharImportModalOpen) {
           setIsCharImportModalOpen(false);
-        } else if (isResetModalOpen) {
+        } else if (shortcutsRef.current.isResetModalOpen) {
           setIsResetModalOpen(false);
         } else if (onClose) {
           onClose();
@@ -651,17 +881,18 @@ export default function AdminDashboard({ onClose }) {
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'ы' || e.key === 'Ы')) {
         e.preventDefault();
         SoundFX.playClick();
-        if (activeTab === 'case') {
+        const tab = shortcutsRef.current.activeTab;
+        if (tab === 'case') {
           handleSaveCaseSettings();
-        } else if (activeTab === 'debate') {
+        } else if (tab === 'debate') {
           handleSaveDebate();
-        } else if (activeTab === 'media' && uploadPreview) {
+        } else if (tab === 'media' && shortcutsRef.current.uploadPreview) {
           handleQuickPublishScreenshot();
-        } else if (activeTab === 'suspects') {
+        } else if (tab === 'suspects') {
           fetch('/api/admin/suspects', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
-            body: JSON.stringify({ suspects: caseData?.suspects || [] })
+            headers: { 'Content-Type': 'application/json', 'x-admin-token': shortcutsRef.current.authToken },
+            body: JSON.stringify({ suspects: shortcutsRef.current.caseData?.suspects || [] })
           }).then(() => showSuccess('Подозреваемые сохранены! (Ctrl+S)'));
         }
         return;
@@ -703,7 +934,55 @@ export default function AdminDashboard({ onClose }) {
       window.removeEventListener('paste', handlePaste, true);
       document.removeEventListener('paste', handlePaste, true);
     };
-  }, [authToken, activeTab, isCharImportModalOpen, isResetModalOpen, caseData, uploadPreview, uploadTitle, uploadTime, uploadCategory, uploadCamera, uploadDesc, uploadFile]);
+  }, [authToken, onClose]);
+
+  // Save changes to a single evidence media card
+  const handleSaveMediaCard = async (updatedItem) => {
+    SoundFX.playClick();
+    try {
+      const res = await fetch(`/api/admin/media/${updatedItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
+        body: JSON.stringify(updatedItem)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        SoundFX.playAccessGranted();
+        setCaseData((prev) => ({
+          ...prev,
+          media: (prev.media || []).map((m) => (m.id === updatedItem.id ? updatedItem : m))
+        }));
+        showSuccess('Снимок успешно сохранен!');
+        setEditingMediaId(null);
+      } else {
+        SoundFX.playAccessDenied();
+        showError(data?.error || 'Ошибка при сохранении снимка.');
+      }
+    } catch (err) {
+      SoundFX.playAccessDenied();
+      showError('Сетевая ошибка при сохранении.');
+    }
+  };
+
+  // Delete single evidence media card
+  const handleDeleteMediaCard = async (item) => {
+    if (window.confirm(`Удалить снимок «${item.title || item.id}»?`)) {
+      SoundFX.playClick();
+      try {
+        await fetch(`/api/admin/media/${item.id}`, {
+          method: 'DELETE',
+          headers: { 'x-admin-token': authToken }
+        });
+        setCaseData((prev) => ({
+          ...prev,
+          media: (prev.media || []).filter((m) => m.id !== item.id)
+        }));
+        showSuccess('Снимок удален!');
+      } catch (err) {
+        showError('Ошибка при удалении снимка.');
+      }
+    }
+  };
 
   // 1. Save Core Case Settings
   const handleSaveCaseSettings = async () => {
@@ -2081,251 +2360,20 @@ export default function AdminDashboard({ onClose }) {
                   }
                   return true;
                 })
-                .map((item, idx) => {
-                  const isEditing = editingMediaId === item.id;
-                  const imageSrc = item.customImageUrl || '';
-
-                  return (
-                    <div
-                      key={item.id || idx}
-                      className="cyber-panel bg-[#090d19] border border-[#1d2745] hover:border-[#00f3ff]/50 rounded-xl overflow-hidden shadow-lg transition-all duration-200 flex flex-col justify-between group"
-                    >
-                      {/* Image Preview Thumbnail with Badges */}
-                      <div className="relative h-44 bg-[#050810] flex items-center justify-center overflow-hidden border-b border-[#18223c]">
-                        {imageSrc ? (
-                          <img
-                            src={imageSrc}
-                            alt={item.title || 'Улика'}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
-                            onClick={() => {
-                              setViewingMediaUrl(imageSrc);
-                              setViewingMediaTitle(item.title);
-                            }}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center p-4 text-center text-gray-500 space-y-1">
-                            <ImageIcon size={32} className="text-[#00f3ff]/50 mb-1" />
-                            <span className="text-[11px] font-bold text-gray-400">{item.title || 'Схематичный снимок'}</span>
-                            <span className="text-[10px] text-gray-600">SVG: {item.svgType || 'corpse_trap'}</span>
-                          </div>
-                        )}
-
-                        {/* Top Badges (Category & Time) */}
-                        <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
-                          <span className="bg-black/80 backdrop-blur-sm text-[#00f3ff] text-[10px] px-2 py-0.5 rounded border border-[#00f3ff]/40 font-bold shadow">
-                            🏷️ {item.tag || 'Улика'}
-                          </span>
-                        </div>
-
-                        <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
-                          <span className="bg-black/80 backdrop-blur-sm text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-500/40 font-bold shadow">
-                            ⏱️ {item.time || '21:40'}
-                          </span>
-                        </div>
-
-                        {/* Lightbox Trigger on Hover */}
-                        {imageSrc && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setViewingMediaUrl(imageSrc);
-                              setViewingMediaTitle(item.title);
-                            }}
-                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-xs font-cyber font-bold gap-1.5 backdrop-blur-[2px]"
-                            title="Открыть полноразмерное изображение"
-                          >
-                            <Eye size={16} className="text-[#00f3ff]" />
-                            <span>ПРОСМОТР</span>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Card Content Details */}
-                      <div className="p-3.5 space-y-2.5 flex-1 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-cyber font-bold text-white text-sm group-hover:text-[#00f3ff] transition-colors line-clamp-1">
-                              {item.title || 'Снимок места преступления'}
-                            </h4>
-                            <span className="text-[10px] text-gray-500 uppercase shrink-0">
-                              #{item.code || item.id}
-                            </span>
-                          </div>
-
-                          <div className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
-                            <Camera size={12} className="text-gray-500" />
-                            <span>{item.camera || 'GMod Снимок'}</span>
-                          </div>
-
-                          {/* Nagito's Quote / Observation */}
-                          <div className="mt-2 p-2 bg-[#05070f] border border-[#162035] rounded text-gray-300 text-[11px] italic leading-relaxed">
-                            {item.desc || '«Возможно, этот снимок послужит решающей зацепкой на суде?...»'}
-                          </div>
-                        </div>
-
-                        {/* Card Action Buttons */}
-                        <div className="pt-2 border-t border-[#162035] flex items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setEditingMediaId(isEditing ? null : item.id)}
-                            className={`px-2.5 py-1 rounded text-xs flex items-center gap-1.5 transition-colors ${
-                              isEditing
-                                ? 'bg-[#00f3ff]/20 text-[#00f3ff] border border-[#00f3ff] font-bold'
-                                : 'bg-[#121829] text-gray-300 hover:text-white border border-[#202b48] hover:border-[#00f3ff]'
-                            }`}
-                          >
-                            <Edit3 size={12} />
-                            <span>{isEditing ? 'Скрыть редактор' : 'Редактировать'}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (window.confirm(`Удалить снимок «${item.title || item.id}»?`)) {
-                                SoundFX.playClick();
-                                await fetch(`/api/admin/media/${item.id}`, {
-                                  method: 'DELETE',
-                                  headers: { 'x-admin-token': authToken }
-                                });
-                                loadAllAdminData();
-                                showSuccess('Снимок удален!');
-                              }
-                            }}
-                            className="p-1.5 text-gray-500 hover:text-red-400 rounded hover:bg-red-500/10 transition-colors"
-                            title="Удалить фотоматериал"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Inline Card Editor Accordion */}
-                      {isEditing && (
-                        <div className="p-4 bg-[#060914] border-t border-[#00f3ff]/30 space-y-3 animate-fade-in text-xs font-mono">
-                          <div className="text-[11px] font-bold text-[#00f3ff] flex items-center gap-1 border-b border-[#1a2542] pb-1.5">
-                            <Edit3 size={13} />
-                            <span>РЕДАКТИРОВАНИЕ ДАННЫХ СНИМКА:</span>
-                          </div>
-
-                          <div>
-                            <label className="text-gray-400 block mb-1">ЗАГОЛОВОК СНИМКА:</label>
-                            <input
-                              type="text"
-                              value={item.title || ''}
-                              onChange={(e) => {
-                                const updated = [...caseData.media];
-                                updated[idx].title = e.target.value;
-                                setCaseData({ ...caseData, media: updated });
-                              }}
-                              className="dr-input py-1 text-xs text-white"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-gray-400 block mb-1">ВРЕМЯ:</label>
-                              <input
-                                type="text"
-                                value={item.time || ''}
-                                onChange={(e) => {
-                                  const updated = [...caseData.media];
-                                  updated[idx].time = e.target.value;
-                                  setCaseData({ ...caseData, media: updated });
-                                }}
-                                className="dr-input py-1 text-xs text-amber-300"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-gray-400 block mb-1">КАТЕГОРИЯ / ТЕГ:</label>
-                              <input
-                                type="text"
-                                value={item.tag || ''}
-                                onChange={(e) => {
-                                  const updated = [...caseData.media];
-                                  updated[idx].tag = e.target.value;
-                                  setCaseData({ ...caseData, media: updated });
-                                }}
-                                className="dr-input py-1 text-xs text-[#00ff88]"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="text-gray-400 block mb-1">ИСТОЧНИК / КАМЕРА:</label>
-                            <input
-                              type="text"
-                              value={item.camera || ''}
-                              onChange={(e) => {
-                                const updated = [...caseData.media];
-                                updated[idx].camera = e.target.value;
-                                setCaseData({ ...caseData, media: updated });
-                              }}
-                              className="dr-input py-1 text-xs"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-gray-400 block mb-1">URL СКРИНШОТА GMOD (ИЛИ BASE64):</label>
-                            <input
-                              type="text"
-                              value={item.customImageUrl || ''}
-                              placeholder="https://... или /img/..."
-                              onChange={(e) => {
-                                const updated = [...caseData.media];
-                                updated[idx].customImageUrl = e.target.value;
-                                setCaseData({ ...caseData, media: updated });
-                              }}
-                              className="dr-input py-1 text-xs text-blue-300"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-gray-400 block mb-1">ЗАМЕТКА НАГИТО / ПОЯСНЕНИЕ:</label>
-                            <textarea
-                              rows={2}
-                              value={item.desc || ''}
-                              onChange={(e) => {
-                                const updated = [...caseData.media];
-                                updated[idx].desc = e.target.value;
-                                setCaseData({ ...caseData, media: updated });
-                              }}
-                              className="dr-input py-1 text-xs resize-none"
-                            />
-                          </div>
-
-                          <div className="flex justify-end gap-2 pt-1">
-                            <button
-                              type="button"
-                              onClick={() => setEditingMediaId(null)}
-                              className="dr-btn py-1 px-3 text-xs text-gray-400 hover:text-white"
-                            >
-                              Закрыть
-                            </button>
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                SoundFX.playClick();
-                                await fetch(`/api/admin/media/${item.id}`, {
-                                  method: 'PUT',
-                                  headers: { 'Content-Type': 'application/json', 'x-admin-token': authToken },
-                                  body: JSON.stringify(item)
-                                });
-                                showSuccess('Снимок успешно сохранен!');
-                                setEditingMediaId(null);
-                              }}
-                              className="dr-btn dr-btn-primary py-1 px-3 text-xs font-cyber font-bold"
-                            >
-                              Сохранить изменения
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                .map((item) => (
+                  <AdminMediaCard
+                    key={item.id}
+                    item={item}
+                    isEditing={editingMediaId === item.id}
+                    onToggleEdit={() => setEditingMediaId(editingMediaId === item.id ? null : item.id)}
+                    onSave={handleSaveMediaCard}
+                    onDelete={handleDeleteMediaCard}
+                    onView={(src, title) => {
+                      setViewingMediaUrl(src);
+                      setViewingMediaTitle(title);
+                    }}
+                  />
+                ))}
             </div>
 
             {/* Empty State */}
