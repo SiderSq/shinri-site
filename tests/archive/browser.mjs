@@ -52,6 +52,8 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   async function capture(name) {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(80);
     await page.screenshot({
       path: path.join(OUT, `${name}.png`),
       fullPage: true,
@@ -83,6 +85,10 @@ try {
   await capture("shinri-entry-desktop");
   await page.setViewportSize({ width: 390, height: 844 });
   await capture("shinri-entry-mobile");
+  for (const width of [320, 768, 1024, 1280]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await capture(`shinri-entry-${width}`);
+  }
   await page.setViewportSize({ width: 1440, height: 1050 });
   const config = JSON.parse(
     fs.readFileSync(path.join(ROOT, "server/data/case.json")),
@@ -97,6 +103,9 @@ try {
   await page.getByRole("button", { name: "Восстановить архив" }).click();
   await page.getByRole("button", { name: "Начать исследование" }).waitFor();
   await capture("shinri-case");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await capture("shinri-case-mobile");
+  await page.setViewportSize({ width: 1440, height: 1050 });
   for (const summary of await page.locator(".exhibits summary").all())
     await summary.click();
   await capture("shinri-case-expanded");
@@ -113,6 +122,9 @@ try {
   await page.getByRole("button", { name: "Проверить весь набор" }).click();
   await page.getByRole("alert").waitFor();
   await capture("shinri-circuit-error");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await capture("shinri-circuit-mobile");
+  await page.setViewportSize({ width: 1440, height: 1050 });
   await wait();
   await page.locator(".measurements input[type=checkbox]").nth(3).check();
   await page.getByRole("button", { name: "Проверить весь набор" }).click();
@@ -134,6 +146,9 @@ try {
     }
   }
   await capture("shinri-timeline");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await capture("shinri-timeline-mobile");
+  await page.setViewportSize({ width: 1440, height: 1050 });
   await wait();
   await page.getByRole("button", { name: "Проверить причинную цепь" }).click();
   await page.getByText("✓ Заключение подтверждено").waitFor();
@@ -169,6 +184,10 @@ try {
       )
       .selectOption(t);
   await wait();
+  await capture("shinri-verdict-filled");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await capture("shinri-verdict-filled-mobile");
+  await page.setViewportSize({ width: 1440, height: 1050 });
   await page.getByRole("button", { name: "Предъявить доказательство" }).click();
   await page
     .getByRole("heading", { name: "Надежда выдержала проверку." })
