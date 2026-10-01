@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Image as ImageIcon,
   Camera,
   ZoomIn,
+  X,
   Clock,
   Tag,
   Copy,
@@ -18,8 +19,12 @@ export default function MediaViewer({ media = [] }) {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [filterMode, setFilterMode] = useState('normal'); // 'normal' | 'contrast' | 'thermal' | 'invert'
   const [copiedId, setCopiedId] = useState(null);
+  const photoDialog = useRef(null);
+  const opener = useRef(null);
+  useEffect(() => { if (selectedPhoto) photoDialog.current?.showModal(); }, [selectedPhoto]);
 
-  const handleOpenPhoto = (photo) => {
+  const handleOpenPhoto = (photo, control) => {
+    opener.current = control;
     SoundFX.playClick();
     setSelectedPhoto(photo);
     setFilterMode('normal');
@@ -28,6 +33,7 @@ export default function MediaViewer({ media = [] }) {
   const handleClose = () => {
     SoundFX.playClick();
     setSelectedPhoto(null);
+    requestAnimationFrame(() => opener.current?.focus());
   };
 
   const handleCopyEvidence = (item, e) => {
@@ -76,8 +82,8 @@ export default function MediaViewer({ media = [] }) {
           <line x1="160" y1="125" x2="140" y2="180" stroke="#162035" strokeWidth="1" />
 
           {/* Wiped mop water streaks (Cleaning attempt) */}
-          <path d="M 40 148 Q 110 138 180 150" stroke="#00f3ff" strokeWidth="8" strokeOpacity="0.25" strokeLinecap="round" fill="none" />
-          <path d="M 60 162 Q 130 152 210 160" stroke="#00f3ff" strokeWidth="6" strokeOpacity="0.2" strokeLinecap="round" fill="none" />
+          <path d="M 40 148 Q 110 138 180 150" stroke="#6ddce5" strokeWidth="8" strokeOpacity="0.25" strokeLinecap="round" fill="none" />
+          <path d="M 60 162 Q 130 152 210 160" stroke="#6ddce5" strokeWidth="6" strokeOpacity="0.2" strokeLinecap="round" fill="none" />
 
           {/* Danganronpa Pink Blood (partially wiped) */}
           <ellipse cx="140" cy="144" rx="35" ry="12" fill="#ff2a85" fillOpacity="0.55" />
@@ -89,18 +95,18 @@ export default function MediaViewer({ media = [] }) {
           <circle cx="60" cy="135" r="11" fill="#2d3b63" />
 
           {/* White zip-ties on victim wrists */}
-          <rect x="110" y="128" width="6" height="10" rx="1" fill="#ffffff" stroke="#00f3ff" strokeWidth="1" />
+          <rect x="110" y="128" width="6" height="10" rx="1" fill="#ffffff" stroke="#6ddce5" strokeWidth="1" />
           <text x="113" y="123" fill="#ffffff" fontSize="7" fontFamily="monospace" textAnchor="middle">СТЯЖКИ</text>
 
           {/* Steel Bear Trap Jaws clamped on victim's leg */}
           <g transform="translate(175, 128)">
-            <ellipse cx="0" cy="10" rx="20" ry="11" fill="#181e2e" stroke="#00f3ff" strokeWidth="2" />
+            <ellipse cx="0" cy="10" rx="20" ry="11" fill="#181e2e" stroke="#6ddce5" strokeWidth="2" />
             <path d="M -16 6 L -12 -2 L -8 6 L -4 -2 L 0 6 L 4 -2 L 8 6 L 12 -2 L 16 6" stroke="#ff2a85" strokeWidth="2" fill="none" />
             <circle cx="0" cy="10" r="4" fill="#ff2a85" />
           </g>
 
           <text x="12" y="20" fill="#ff2a85" fontSize="10" fontFamily="monospace" fontWeight="bold">● МУСОРОСЖИГАТЕЛЬ // ТЕЛО ЖЕРТВЫ</text>
-          <text x="12" y="168" fill="#00f3ff" fontSize="9" fontFamily="monospace">УЛИКИ: КАПКАН, СТЯЖКИ, ЗАМЫТЫЙ ПОЛ</text>
+          <text x="12" y="168" fill="#6ddce5" fontSize="9" fontFamily="monospace">УЛИКИ: КАПКАН, СТЯЖКИ, ЗАМЫТЫЙ ПОЛ</text>
         </svg>
       );
     }
@@ -144,19 +150,19 @@ export default function MediaViewer({ media = [] }) {
           <ellipse cx="160" cy="145" rx="50" ry="16" fill="#120c18" stroke="#ff2a85" strokeWidth="1" strokeDasharray="3 2" />
 
           {/* Battery power unit */}
-          <rect x="80" y="120" width="35" height="24" fill="#1b2438" stroke="#00f3ff" strokeWidth="1.5" rx="2" />
-          <rect x="92" y="116" width="11" height="4" fill="#00f3ff" />
-          <text x="97" y="135" fill="#00f3ff" fontSize="8" fontFamily="monospace" textAnchor="middle">12V</text>
+          <rect x="80" y="120" width="35" height="24" fill="#1b2438" stroke="#6ddce5" strokeWidth="1.5" rx="2" />
+          <rect x="92" y="116" width="11" height="4" fill="#6ddce5" />
+          <text x="97" y="135" fill="#6ddce5" fontSize="8" fontFamily="monospace" textAnchor="middle">12V</text>
 
           {/* Copper stripped wires leading across threshold */}
           <path d="M 115 132 Q 135 145 160 142 T 215 138" stroke="#d97706" strokeWidth="2.5" fill="none" />
           <path d="M 115 136 Q 140 152 170 148 T 225 142" stroke="#b45309" strokeWidth="2" fill="none" />
 
           {/* Spark discharge lightning bolts */}
-          <path d="M 155 140 L 162 125 L 158 125 L 168 110 L 164 125 L 170 125 Z" fill="#00f3ff" />
+          <path d="M 155 140 L 162 125 L 158 125 L 168 110 L 164 125 L 170 125 Z" fill="#6ddce5" />
           <path d="M 175 142 L 180 132 L 177 132 L 184 120 L 181 132 L 186 132 Z" fill="#ff2a85" />
 
-          <text x="12" y="20" fill="#00f3ff" fontSize="10" fontFamily="monospace" fontWeight="bold">● ОСТАТКИ ЭЛЕКТРОЛОВУШКИ У ВХОДА</text>
+          <text x="12" y="20" fill="#6ddce5" fontSize="10" fontFamily="monospace" fontWeight="bold">● ОСТАТКИ ЭЛЕКТРОЛОВУШКИ У ВХОДА</text>
           <text x="12" y="168" fill="#ff2a85" fontSize="9" fontFamily="monospace">ОГЛУШЕНИЕ ЖЕРТВЫ ЭЛЕКТРОРАЗРЯДОМ</text>
         </svg>
       );
@@ -168,11 +174,11 @@ export default function MediaViewer({ media = [] }) {
         <svg viewBox="0 0 320 180" className={`w-full h-48 sm:h-56 bg-[#070912] border border-[#1b233a] transition-all ${filterClass}`}>
           {/* Tile floor with wet reflections */}
           <rect x="0" y="110" width="320" height="70" fill="#0c111e" />
-          <path d="M 30 135 Q 120 125 210 135 T 300 130" stroke="#00f3ff" strokeWidth="12" strokeOpacity="0.2" fill="none" />
+          <path d="M 30 135 Q 120 125 210 135 T 300 130" stroke="#6ddce5" strokeWidth="12" strokeOpacity="0.2" fill="none" />
           <path d="M 50 155 Q 140 145 230 155" stroke="#ff2a85" strokeWidth="8" strokeOpacity="0.25" fill="none" />
 
           {/* Cleaning Bucket with wheels */}
-          <rect x="70" y="80" width="55" height="50" fill="#18233a" stroke="#00f3ff" strokeWidth="1.5" rx="3" />
+          <rect x="70" y="80" width="55" height="50" fill="#18233a" stroke="#6ddce5" strokeWidth="1.5" rx="3" />
           <circle cx="80" cy="133" r="5" fill="#304163" />
           <circle cx="115" cy="133" r="5" fill="#304163" />
           {/* Pink soapy solution inside bucket */}
@@ -184,11 +190,11 @@ export default function MediaViewer({ media = [] }) {
 
           {/* Water drips & bubbles */}
           <circle cx="135" cy="140" r="3" fill="#ff2a85" fillOpacity="0.8" />
-          <circle cx="150" cy="148" r="2" fill="#00f3ff" fillOpacity="0.7" />
-          <circle cx="165" cy="138" r="4" fill="#00f3ff" fillOpacity="0.5" />
+          <circle cx="150" cy="148" r="2" fill="#6ddce5" fillOpacity="0.7" />
+          <circle cx="165" cy="138" r="4" fill="#6ddce5" fillOpacity="0.5" />
 
           <text x="12" y="20" fill="#ff2a85" fontSize="10" fontFamily="monospace" fontWeight="bold">● УЛИКА СОКРЫТИЯ // ШВАБРА И ВЕДРО</text>
-          <text x="12" y="168" fill="#00f3ff" fontSize="9" fontFamily="monospace">УБОРКА ОТПЕЧАТКОВ И СМЫТАЯ КРОВЬ</text>
+          <text x="12" y="168" fill="#6ddce5" fontSize="9" fontFamily="monospace">УБОРКА ОТПЕЧАТКОВ И СМЫТАЯ КРОВЬ</text>
         </svg>
       );
     }
@@ -204,7 +210,7 @@ export default function MediaViewer({ media = [] }) {
         <rect x="40" y="50" width="25" height="25" fill="#33415c" stroke="#5c677d" strokeWidth="1.5" />
 
         {/* Pack of white zip ties */}
-        <rect x="90" y="72" width="45" height="15" fill="#ffffff" stroke="#00f3ff" strokeWidth="1" rx="1" />
+        <rect x="90" y="72" width="45" height="15" fill="#ffffff" stroke="#6ddce5" strokeWidth="1" rx="1" />
         <line x1="95" y1="75" x2="130" y2="75" stroke="#94a3b8" strokeWidth="1" />
         <line x1="95" y1="80" x2="130" y2="80" stroke="#94a3b8" strokeWidth="1" />
         <text x="112" y="100" fill="#ffffff" fontSize="8" fontFamily="monospace" textAnchor="middle">СТЯЖКИ</text>
@@ -216,7 +222,7 @@ export default function MediaViewer({ media = [] }) {
         <rect x="195" y="70" width="70" height="35" fill="#100b14" stroke="#ff2a85" strokeWidth="1.5" strokeDasharray="4 2" />
         <text x="230" y="91" fill="#ff2a85" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="monospace">МЕСТО КАПКАНА</text>
 
-        <text x="12" y="20" fill="#00f3ff" fontSize="10" fontFamily="monospace" fontWeight="bold">● ВЕРСТАК В МАСТЕРСКОЙ</text>
+        <text x="12" y="20" fill="#6ddce5" fontSize="10" fontFamily="monospace" fontWeight="bold">● ВЕРСТАК В МАСТЕРСКОЙ</text>
         <text x="12" y="168" fill="#ffb703" fontSize="9" fontFamily="monospace">СЛЕДЫ СБОРКИ ЛОВУШЕК И СТЯЖЕК</text>
       </svg>
     );
@@ -228,20 +234,20 @@ export default function MediaViewer({ media = [] }) {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b233a] pb-3">
         <div>
-          <span className="text-xs font-mono text-[#00f3ff] uppercase tracking-wider block">
+          <span className="text-sm font-mono text-[#6ddce5] uppercase tracking-wider block">
             СНИМКИ С МЕСТА СОБЫТИЙ // FORENSIC EVIDENCE
           </span>
-          <h2 className="text-lg sm:text-xl font-cyber font-bold text-white flex items-center gap-2">
-            <Camera className="text-[#00f3ff]" size={20} />
-            <span>03 ФОТОГРАФИИ И УЛИКИ</span>
+          <h2 className="text-lg sm:text-xl font-interface font-bold text-white flex items-center gap-2">
+            <Camera className="text-[#6ddce5]" size={20} />
+            <span>Фотоархив и улики</span>
           </h2>
         </div>
-        <span className="text-xs font-mono text-gray-400 bg-[#0e1322] px-2.5 py-1 border border-[#1e263d]">
+        <span className="text-sm font-mono text-gray-400 bg-[#0e1322] px-2.5 py-1 border border-[#1e263d]">
           СНИМКОВ В ДЕЛЕ: {media.length}
         </span>
       </div>
 
-      <p className="text-xs font-mono text-gray-400">
+      <p className="text-sm font-mono text-gray-400">
         Материалы фотофиксации расследования. Вы можете сопоставлять снимки места преступления и передачу орудия для установления истины.
       </p>
 
@@ -250,56 +256,54 @@ export default function MediaViewer({ media = [] }) {
         {media.map((item) => (
           <div
             key={item.id}
-            className="cyber-panel bg-[#0b0e17] border border-[#1e263e] overflow-hidden group hover:border-[#00f3ff] transition-all flex flex-col justify-between"
+            className="cyber-panel bg-[#0b0e17] border border-[#1e263e] overflow-hidden group hover:border-[#6ddce5] transition-all flex flex-col justify-between"
           >
             {/* Visual Canvas Container */}
-            <div className="relative cursor-pointer overflow-hidden" onClick={() => handleOpenPhoto(item)}>
+            <button type="button" aria-label={`Открыть снимок: ${item.title}`} className="relative w-full cursor-pointer overflow-hidden" onClick={(e) => handleOpenPhoto(item, e.currentTarget)}>
               {renderVisualArtifact(item)}
               
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <span className="dr-btn dr-btn-cyan text-xs py-1.5 px-3 flex items-center gap-1.5">
+                <span className="dr-btn dr-btn-cyan text-sm py-1.5 px-3 flex items-center gap-1.5">
                   <ZoomIn size={14} />
                   <span>ИНСПЕКЦИЯ СНИМКА</span>
                 </span>
               </div>
 
-              <div className="absolute top-2 right-2 bg-black/70 backdrop-blur border border-[#1e263d] px-2 py-0.5 rounded text-[10px] font-mono text-[#00f3ff]">
-                {item.camera || 'СНИМОК'}
-              </div>
-            </div>
+            </button>
 
             {/* Metadata Footer */}
-            <div className="p-3.5 space-y-2 font-mono text-xs flex-1 flex flex-col justify-between">
+            <div className="p-3.5 space-y-2 font-interface text-sm flex-1 flex flex-col justify-between">
+              <p className="text-sm text-gray-400">{item.camera || 'Материал архива'}</p>
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                   <span className="font-bold text-white text-sm">
                     {item.title}
                   </span>
-                  <span className="text-gray-400 text-[11px] flex items-center gap-1">
+                  <span className="shrink-0 whitespace-nowrap text-gray-400 text-sm flex items-center gap-1">
                     <Clock size={11} className="text-amber-400" />
                     {item.time}
                   </span>
                 </div>
 
-                <p className="text-gray-300 text-[11px] leading-relaxed">
+                <p className="text-gray-300 text-sm leading-relaxed">
                   {item.desc}
                 </p>
               </div>
 
               <div className="pt-2 border-t border-[#162035] flex items-center justify-between">
-                <span className="text-[10px] text-[#00f3ff] font-semibold">
+                <span className="text-sm text-[#6ddce5] font-semibold">
                   [{item.tag}]
                 </span>
 
                 <button
                   onClick={(e) => handleCopyEvidence(item, e)}
-                  className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-[#00f3ff] transition-all p-1"
+                  className="flex items-center gap-1 text-sm text-gray-400 hover:text-[#6ddce5] transition-all p-1"
                   title="Скопировать описание улики для чата суда"
                 >
                   {copiedId === item.id ? (
                     <>
-                      <Check size={12} className="text-[#00ff88]" />
-                      <span className="text-[#00ff88]">Скопировано</span>
+                      <Check size={12} className="text-[#78dfa7]" />
+                      <span className="text-[#78dfa7]">Скопировано</span>
                     </>
                   ) : (
                     <>
@@ -316,38 +320,38 @@ export default function MediaViewer({ media = [] }) {
 
       {/* Inspect Photo Modal */}
       {selectedPhoto && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl cyber-panel p-6 bg-[#0a0d16] border-2 border-[#00f3ff] shadow-[0_0_40px_rgba(0,243,255,0.3)] animate-scale-up space-y-4 font-mono">
+        <dialog ref={photoDialog} className="photo-dialog" aria-labelledby="photo-dialog-title" onCancel={handleClose}>
+          <div className="w-full max-w-2xl cyber-panel p-6 bg-[#0a0d16] border-2 border-[#6ddce5] shadow-[0_0_40px_rgba(109,220,229,0.3)] animate-scale-up space-y-4 font-mono">
             
-            <div className="flex items-center justify-between border-b border-[#1f2842] pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1f2842] pb-3">
               <div>
-                <span className="text-xs text-[#00f3ff] uppercase block">
+                <span className="text-sm text-[#6ddce5] uppercase block">
                   ДЕТАЛЬНАЯ ИНСПЕКЦИЯ УЛИКИ // {selectedPhoto.code}
                 </span>
-                <h3 className="font-cyber font-bold text-white text-base">
+                <h3 id="photo-dialog-title" className="font-interface font-bold text-white text-base">
                   {selectedPhoto.title}
                 </h3>
               </div>
               <button
-                onClick={handleClose}
+                aria-label="Закрыть снимок" onClick={handleClose}
                 className="text-gray-400 hover:text-white text-lg px-2"
               >
-                ✕
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
 
             {/* Filter Toggle Toolbar */}
-            <div className="flex items-center justify-between text-xs bg-[#060810] p-2 border border-[#18233a] rounded">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm bg-[#060810] p-2 border border-[#18233a] rounded">
               <span className="text-gray-500 flex items-center gap-1">
                 <Sliders size={12} />
                 <span>ОБРАБОТКА ИЗОБРАЖЕНИЯ:</span>
               </span>
-              <div className="flex gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 <button
                   onClick={() => setFilterMode('normal')}
-                  className={`px-2 py-0.5 rounded text-[11px] border ${
+                  className={`px-2 py-0.5 rounded text-sm border ${
                     filterMode === 'normal'
-                      ? 'bg-[#152038] border-[#00f3ff] text-[#00f3ff] font-bold'
+                      ? 'bg-[#152038] border-[#6ddce5] text-[#6ddce5] font-bold'
                       : 'border-transparent text-gray-400 hover:text-white'
                   }`}
                 >
@@ -355,9 +359,9 @@ export default function MediaViewer({ media = [] }) {
                 </button>
                 <button
                   onClick={() => setFilterMode('contrast')}
-                  className={`px-2 py-0.5 rounded text-[11px] border ${
+                  className={`px-2 py-0.5 rounded text-sm border ${
                     filterMode === 'contrast'
-                      ? 'bg-[#152038] border-[#00f3ff] text-[#00f3ff] font-bold'
+                      ? 'bg-[#152038] border-[#6ddce5] text-[#6ddce5] font-bold'
                       : 'border-transparent text-gray-400 hover:text-white'
                   }`}
                 >
@@ -365,9 +369,9 @@ export default function MediaViewer({ media = [] }) {
                 </button>
                 <button
                   onClick={() => setFilterMode('thermal')}
-                  className={`px-2 py-0.5 rounded text-[11px] border ${
+                  className={`px-2 py-0.5 rounded text-sm border ${
                     filterMode === 'thermal'
-                      ? 'bg-[#152038] border-[#00f3ff] text-[#00f3ff] font-bold'
+                      ? 'bg-[#152038] border-[#6ddce5] text-[#6ddce5] font-bold'
                       : 'border-transparent text-gray-400 hover:text-white'
                   }`}
                 >
@@ -375,9 +379,9 @@ export default function MediaViewer({ media = [] }) {
                 </button>
                 <button
                   onClick={() => setFilterMode('invert')}
-                  className={`px-2 py-0.5 rounded text-[11px] border ${
+                  className={`px-2 py-0.5 rounded text-sm border ${
                     filterMode === 'invert'
-                      ? 'bg-[#152038] border-[#00f3ff] text-[#00f3ff] font-bold'
+                      ? 'bg-[#152038] border-[#6ddce5] text-[#6ddce5] font-bold'
                       : 'border-transparent text-gray-400 hover:text-white'
                   }`}
                 >
@@ -390,33 +394,33 @@ export default function MediaViewer({ media = [] }) {
               {renderVisualArtifact(selectedPhoto, filterMode)}
             </div>
 
-            <div className="p-4 bg-[#0e1322] border border-[#1b233a] text-xs space-y-2 text-gray-300">
-              <div className="flex justify-between text-[11px] text-gray-400 border-b border-gray-800 pb-1">
+            <div className="p-4 bg-[#0e1322] border border-[#1b233a] text-sm space-y-2 text-gray-300">
+              <div className="flex flex-wrap gap-2 justify-between text-sm text-gray-400 border-b border-gray-800 pb-1">
                 <span>ИСТОЧНИК: <strong className="text-white">{selectedPhoto.camera}</strong></span>
                 <span>ВРЕМЯ: <strong className="text-amber-400">{selectedPhoto.time}</strong></span>
-                <span>МЕТКА: <strong className="text-[#00f3ff]">{selectedPhoto.tag}</strong></span>
+                <span>МЕТКА: <strong className="text-[#6ddce5]">{selectedPhoto.tag}</strong></span>
               </div>
               <p className="leading-relaxed">
                 {selectedPhoto.desc}
               </p>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
               <button
                 onClick={(e) => handleCopyEvidence(selectedPhoto, e)}
-                className="dr-btn py-1.5 px-4 text-xs font-cyber flex items-center gap-1.5 border-[#00f3ff]/50 text-[#00f3ff]"
+                className="dr-btn py-1.5 px-4 text-sm font-interface flex items-center gap-1.5 border-[#6ddce5]/50 text-[#6ddce5]"
               >
-                {copiedId === selectedPhoto.id ? <Check size={14} className="text-[#00ff88]" /> : <Copy size={14} />}
+                {copiedId === selectedPhoto.id ? <Check size={14} className="text-[#78dfa7]" /> : <Copy size={14} />}
                 <span>{copiedId === selectedPhoto.id ? 'СКОПИРОВАНО!' : 'СКОПИРОВАТЬ ДЛЯ СУДА'}</span>
               </button>
 
-              <button onClick={handleClose} className="dr-btn py-1.5 px-4 text-xs font-cyber">
+              <button onClick={handleClose} className="dr-btn py-1.5 px-4 text-sm font-interface">
                 ЗАКРЫТЬ
               </button>
             </div>
 
           </div>
-        </div>
+        </dialog>
       )}
 
     </div>

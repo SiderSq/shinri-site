@@ -96,7 +96,7 @@ export default function BrokenScreen({ onRecoveryInitiated }) {
               </h2>
             </div>
           </div>
-          <span className="font-mono text-xs text-[#00f3ff] bg-[#00f3ff]/10 px-2.5 py-1 border border-[#00f3ff]/30">
+          <span className="font-mono text-xs text-[#6ddce5] bg-[#6ddce5]/10 px-2.5 py-1 border border-[#6ddce5]/30">
             СЕССИЯ: КУРАТОРСКИЙ МОНИТОРИНГ
           </span>
         </div>
@@ -105,7 +105,7 @@ export default function BrokenScreen({ onRecoveryInitiated }) {
         <div className="space-y-2 mb-4">
           <div className="flex justify-between text-xs font-mono">
             <span className="text-gray-400">Проверка целостности данных архива:</span>
-            <span className={integrityProgress === 100 ? 'text-[#ff2a85] font-bold' : 'text-[#00f3ff]'}>
+            <span className={integrityProgress === 100 ? 'text-[#ff2a85] font-bold' : 'text-[#6ddce5]'}>
               {integrityProgress}%
             </span>
           </div>
@@ -114,7 +114,7 @@ export default function BrokenScreen({ onRecoveryInitiated }) {
               className={`h-full transition-all duration-150 ${
                 integrityProgress === 100
                   ? 'bg-gradient-to-r from-red-600 to-[#ff2a85]'
-                  : 'bg-gradient-to-r from-cyan-600 to-[#00f3ff]'
+                  : 'bg-gradient-to-r from-cyan-600 to-[#6ddce5]'
               }`}
               style={{ width: `${integrityProgress}%` }}
             />
@@ -174,7 +174,7 @@ export default function BrokenScreen({ onRecoveryInitiated }) {
           </div>
 
           {/* Nagito Clue Hint */}
-          <div className="p-3 bg-[#111728] border-l-2 border-[#00ff88] text-[11px] font-mono text-gray-300 leading-relaxed italic">
+          <div className="p-3 bg-[#111728] border-l-2 border-[#78dfa7] text-[11px] font-mono text-gray-300 leading-relaxed italic">
             «Разве отчаяние не прекрасно? Тот, кто пытался уничтожить эти записи, думал, что стёр всё без следа... Но если у вас есть ключ к снимку — истина непременно вырвется наружу!»
           </div>
         </div>
@@ -183,7 +183,7 @@ export default function BrokenScreen({ onRecoveryInitiated }) {
         <div className="md:col-span-2 cyber-panel p-5 bg-[#090b12] border border-[#222942]">
           <div className="flex items-center justify-between border-b border-[#1d243a] pb-2 mb-3">
             <div className="flex items-center gap-2 text-white font-cyber font-bold text-sm">
-              <Terminal className="text-[#00f3ff]" size={16} />
+              <Terminal className="text-[#6ddce5]" size={16} />
               <span>СИСТЕМНЫЙ ЖУРНАЛ СБОЯ // SYSTEM LOG</span>
             </div>
             <span className="text-[11px] font-mono text-gray-500">
@@ -203,7 +203,7 @@ export default function BrokenScreen({ onRecoveryInitiated }) {
                 onClick={log.isSnapshot ? handleSnapshotClick : undefined}
                 className={`p-2.5 rounded transition-all border ${
                   log.isSnapshot
-                    ? 'bg-[#12192c] border-[#00f3ff]/60 hover:border-[#00f3ff] hover:bg-[#16223d] cursor-pointer shadow-[0_0_10px_rgba(0,243,255,0.2)] pulse-pink'
+                    ? 'bg-[#12192c] border-[#6ddce5]/60 hover:border-[#6ddce5] hover:bg-[#16223d] cursor-pointer shadow-[0_0_10px_rgba(109,220,229,0.2)] pulse-pink'
                     : 'bg-[#0e111c] border-[#181f33] text-gray-400'
                 }`}
               >
@@ -212,7 +212,7 @@ export default function BrokenScreen({ onRecoveryInitiated }) {
                     <span className="text-gray-500 font-semibold">{log.time}</span>
                     <span
                       className={`font-bold tracking-wider ${
-                        log.isSnapshot ? 'text-[#00f3ff]' : 'text-gray-300'
+                        log.isSnapshot ? 'text-[#6ddce5]' : 'text-gray-300'
                       }`}
                     >
                       {log.event}
@@ -220,7 +220,7 @@ export default function BrokenScreen({ onRecoveryInitiated }) {
                   </div>
 
                   {log.isSnapshot && (
-                    <span className="bg-[#00f3ff]/20 text-[#00f3ff] border border-[#00f3ff] text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider animate-pulse flex items-center gap-1">
+                    <span className="bg-[#6ddce5]/20 text-[#6ddce5] border border-[#6ddce5] text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider animate-pulse flex items-center gap-1">
                       [ АВАРИЙНЫЙ СНИМОК ОЗУ ]
                     </span>
                   )}
@@ -246,11 +246,11 @@ export default function BrokenScreen({ onRecoveryInitiated }) {
       {/* Recovery Input Modal (Notice: NO code hints or spoilers!) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md cyber-panel p-6 bg-[#0e121f] border-2 border-[#00f3ff] shadow-[0_0_30px_rgba(0,243,255,0.3)] animate-scale-up">
+          <div className="w-full max-w-md cyber-panel p-6 bg-[#0e121f] border-2 border-[#6ddce5] shadow-[0_0_30px_rgba(109,220,229,0.3)] animate-scale-up">
             
             <div className="flex items-center justify-between border-b border-[#1f2842] pb-3 mb-4">
               <div className="flex items-center gap-2">
-                <Cpu className="text-[#00f3ff]" size={20} />
+                <Cpu className="text-[#6ddce5]" size={20} />
                 <h3 className="font-cyber font-bold text-white text-base">
                   ЛОКАЛЬНЫЙ СНИМОК ОБНАРУЖЕН
                 </h3>
@@ -295,7 +295,7 @@ export default function BrokenScreen({ onRecoveryInitiated }) {
                     autoFocus
                     className="dr-input input-with-icon font-mono tracking-wider uppercase"
                   />
-                  <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#00f3ff] pointer-events-none" size={16} />
+                  <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6ddce5] pointer-events-none" size={16} />
                 </div>
               </div>
 

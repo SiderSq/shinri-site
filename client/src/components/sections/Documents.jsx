@@ -53,36 +53,36 @@ export default function Documents({ documents = [] }) {
   const isMonokumaFile = selectedDoc?.code?.includes('MONOKUMA') || selectedDoc?.category?.includes('Монокум');
 
   return (
-    <div className="space-y-4">
+    <div className="documents-view space-y-4">
       
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b233a] pb-3">
         <div>
-          <span className="text-xs font-mono text-[#00f3ff] uppercase tracking-wider block">
+          <span className="text-sm font-interface text-[#6ddce5] uppercase tracking-wider block">
             МАТЕРИАЛЫ СЛЕДСТВИЯ // MONOKUMA PROTOCOL
           </span>
-          <h2 className="text-lg sm:text-xl font-cyber font-bold text-white flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-interface font-bold text-white flex items-center gap-2">
             <FileText className="text-[#ff2a85]" size={20} />
-            <span>02 ФАЙЛ МОНОКУМЫ И МАТЕРИАЛЫ ДЕЛА</span>
+            <span>Материалы дела</span>
           </h2>
         </div>
-        <span className="text-xs font-mono text-gray-400 bg-[#0e1322] px-2.5 py-1 border border-[#1e263d]">
+        <span className="text-sm font-interface text-gray-400 bg-[#0e1322] px-2.5 py-1 border border-[#1e263d]">
           ДОКУМЕНТОВ: {filteredDocs.length} / {documents.length}
         </span>
       </div>
 
       {/* Search Bar */}
-      <div className="flex items-center justify-between gap-3 bg-[#0a0d16] p-2.5 border border-[#1a2238] rounded font-mono text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 gap-3 bg-[#0a0d16] p-2.5 border border-[#1a2238] rounded font-interface text-sm">
         <span className="text-gray-400 hidden sm:inline">
           Изучите официальные данные от Монокумы и свидетельские показания:
         </span>
         <div className="w-full sm:w-72">
           <input
-            type="text"
+            type="search" aria-label="Поиск по материалам дела"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Поиск по материалам дела..."
-            className="dr-input text-xs px-3 py-1.5 font-mono w-full"
+            className="dr-input text-sm px-3 py-1.5 font-interface w-full"
           />
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function Documents({ documents = [] }) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
         {/* Left: Document List */}
-        <div className="lg:col-span-4 space-y-2">
+        <div className="min-w-0 lg:col-span-4 space-y-2">
           {filteredDocs.map((doc) => {
             const isSelected = selectedDoc?.id === doc.id;
             const isMono = doc.code?.includes('MONOKUMA') || doc.category?.includes('Монокум');
@@ -99,35 +99,35 @@ export default function Documents({ documents = [] }) {
               <button
                 key={doc.id}
                 onClick={() => handleSelect(doc.id)}
-                className={`w-full text-left p-3 rounded transition-all border font-mono ${
+                className={`w-full text-left p-3 rounded transition-all border font-interface ${
                   isSelected
                     ? isMono
                       ? 'bg-[#20101b] border-[#ff2a85] text-white shadow-[0_0_14px_rgba(255,42,133,0.3)]'
-                      : 'bg-[#151d32] border-[#00f3ff] text-white shadow-[0_0_12px_rgba(0,243,255,0.25)]'
+                      : 'bg-[#151d32] border-[#6ddce5] text-white shadow-[0_0_12px_rgba(109,220,229,0.25)]'
                     : 'bg-[#0c0f1a] border-[#182035] text-gray-400 hover:text-gray-200 hover:bg-[#101524]'
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                  <span className={`text-sm font-bold px-1.5 py-0.5 rounded ${
                     isSelected
                       ? isMono
-                        ? 'bg-[#ff2a85] text-white'
-                        : 'bg-[#00f3ff] text-black'
+                        ? 'bg-[#ff2a85] text-[#07080d]'
+                        : 'bg-[#6ddce5] text-black'
                       : 'bg-[#182136] text-gray-400'
                   }`}>
                     [{doc.code}]
                   </span>
-                  <span className="text-[11px] text-gray-500">{doc.time}</span>
+                  <span className="text-sm text-gray-500">{doc.time}</span>
                 </div>
-                <div className="text-xs font-semibold tracking-wide text-gray-200 line-clamp-1">
+                <div className="text-sm font-semibold tracking-wide text-gray-200 line-clamp-1">
                   {doc.title}
                 </div>
-                <div className="text-[10px] text-gray-500 mt-1 flex items-center justify-between">
+                <div className="text-sm text-gray-500 mt-1 flex flex-wrap items-center justify-between gap-2">
                   <span className="truncate flex items-center gap-1">
                     <User size={10} />
                     {doc.author}
                   </span>
-                  <span className="text-[9px] text-[#00f3ff]/70 font-semibold uppercase">
+                  <span className="text-sm text-[#6ddce5]/70 font-semibold uppercase">
                     {doc.category}
                   </span>
                 </div>
@@ -136,63 +136,63 @@ export default function Documents({ documents = [] }) {
           })}
 
           {filteredDocs.length === 0 && (
-            <div className="p-6 text-center text-gray-500 font-mono text-xs border border-[#1b233a] rounded">
+            <div className="p-6 text-center text-gray-500 font-interface text-sm border border-[#1b233a] rounded">
               Документы не найдены
             </div>
           )}
         </div>
 
         {/* Right: Active Document Viewer */}
-        <div className="lg:col-span-8 cyber-panel p-5 bg-[#090c15] border border-[#202945] relative space-y-4 font-mono">
+        <div className="document-viewer min-w-0 lg:col-span-8 cyber-panel p-5 bg-[#090c15] border border-[#202945] relative space-y-4 font-interface">
           {selectedDoc ? (
             <div className="space-y-4">
               
               {/* Monokuma File Stylized Top Banner if applicable */}
               {isMonokumaFile ? (
-                <div className="bg-gradient-to-r from-[#ff2a85]/30 via-[#260f1d] to-[#0d0f17] border-l-4 border-[#ff2a85] p-3 rounded flex items-center justify-between text-xs">
+                <div className="bg-gradient-to-r from-[#ff2a85]/30 via-[#260f1d] to-[#0d0f17] border-l-4 border-[#ff2a85] p-3 rounded flex flex-wrap items-center justify-between gap-2 text-sm">
                   <div className="flex items-center gap-2">
                     <Skull className="text-[#ff2a85] animate-pulse" size={18} />
-                    <span className="font-cyber font-bold tracking-wider text-white">
+                    <span className="font-interface font-bold tracking-wider text-white">
                       ОФИЦИАЛЬНЫЙ ФАЙЛ МОНОКУМЫ // ПРИГОВОР КЛАССНОГО СУДА
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-[#ff2a85] font-bold uppercase">
+                  <span className="text-sm font-interface text-[#ff2a85] font-bold uppercase">
                     MONOKUMA FILE
                   </span>
                 </div>
               ) : (
-                <div className="bg-[#0e1628] border-l-4 border-[#00f3ff] p-2.5 rounded text-xs flex items-center justify-between">
+                <div className="bg-[#0e1628] border-l-4 border-[#6ddce5] p-2.5 rounded text-sm flex flex-wrap items-center justify-between gap-2">
                   <span className="text-gray-300 font-bold flex items-center gap-2">
-                    <FileSearch size={15} className="text-[#00f3ff]" />
+                    <FileSearch size={15} className="text-[#6ddce5]" />
                     <span>СВИДЕТЕЛЬСКИЕ МАТЕРИАЛЫ КЛАССНОГО СУДА</span>
                   </span>
-                  <span className="text-[10px] text-gray-400">РЕФ: {selectedDoc.code}</span>
+                  <span className="text-sm text-gray-400">РЕФ: {selectedDoc.code}</span>
                 </div>
               )}
 
               {/* Document Stamp Header */}
               <div className="border-b border-[#1b233a] pb-3 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <div className="text-[11px] text-[#ff2a85] font-bold uppercase tracking-wider flex items-center gap-2">
+                  <div className="text-sm text-[#ff2a85] font-bold uppercase tracking-wider flex items-center gap-2">
                     <span>{selectedDoc.category || 'МАТЕРИАЛ ДЕЛА'}</span>
                     <span className="text-gray-600">//</span>
                     <span className="text-gray-400">ФИКСАЦИЯ: {selectedDoc.time}</span>
                   </div>
-                  <h3 className="text-base sm:text-lg font-cyber font-bold text-white mt-0.5">
+                  <h3 className="text-base sm:text-lg font-interface font-bold text-white mt-0.5">
                     {selectedDoc.title}
                   </h3>
-                  <div className="text-[11px] text-gray-400 mt-0.5">
+                  <div className="text-sm text-gray-400 mt-0.5">
                     АВТОР: <strong className="text-gray-200">{selectedDoc.author}</strong>
                   </div>
                 </div>
 
                 <button
                   onClick={handleCopyDocSnippet}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#121a2d] hover:bg-[#1a2745] border border-[#233355] hover:border-[#00f3ff] text-gray-300 hover:text-[#00f3ff] rounded text-xs transition-all font-bold"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#121a2d] hover:bg-[#1a2745] border border-[#233355] hover:border-[#6ddce5] text-gray-300 hover:text-[#6ddce5] rounded text-sm transition-all font-bold"
                   title="Скопировать выдержку для чата суда"
                 >
-                  {copiedSnippet ? <Check size={14} className="text-[#00ff88]" /> : <Copy size={14} />}
-                  <span>{copiedSnippet ? 'СКОПИРОВАНО!' : 'СКОПИРОВАТЬ ДЛЯ СУДА'}</span>
+                  {copiedSnippet ? <Check size={14} className="text-[#78dfa7]" /> : <Copy size={14} />}
+                  <span>{copiedSnippet ? 'Скопировано' : 'Скопировать для суда'}</span>
                 </button>
               </div>
 
@@ -202,7 +202,7 @@ export default function Documents({ documents = [] }) {
                   {selectedDoc.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="text-[10px] bg-[#121829] border border-[#212c47] text-gray-400 px-2 py-0.5 rounded flex items-center gap-1"
+                      className="text-sm bg-[#121829] border border-[#212c47] text-gray-400 px-2 py-0.5 rounded flex items-center gap-1"
                     >
                       <Tag size={10} />
                       {tag}
@@ -212,7 +212,7 @@ export default function Documents({ documents = [] }) {
               )}
 
               {/* Document Text Body (Clean and easy to read during GMod voice/text RP) */}
-              <div className="p-4 sm:p-5 bg-[#0e121e] border border-[#1a2238] rounded text-xs sm:text-sm text-gray-200 whitespace-pre-line leading-relaxed shadow-inner font-mono">
+              <div className="document-body p-4 sm:p-5 bg-[#0e121e] border border-[#1a2238] rounded text-sm sm:text-sm text-gray-200 whitespace-pre-line leading-relaxed shadow-inner font-interface">
                 {selectedDoc.content}
               </div>
 
@@ -220,7 +220,7 @@ export default function Documents({ documents = [] }) {
 
             </div>
           ) : (
-            <div className="text-center py-16 text-gray-500 font-mono text-xs">
+            <div className="text-center py-16 text-gray-500 font-interface text-sm">
               Выберите документ из списка слева для просмотра.
             </div>
           )}

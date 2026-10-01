@@ -49,15 +49,15 @@ export default function RecoveryAnimation({ onComplete }) {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-4">
-      <div className="w-full max-w-xl cyber-panel p-8 bg-[#0b0e18] border-2 border-[#00f3ff] shadow-[0_0_40px_rgba(0,243,255,0.25)] text-center space-y-6">
+      <div className="w-full max-w-xl cyber-panel p-8 bg-[#0b0e18] border-2 border-[#6ddce5] shadow-[0_0_40px_rgba(109,220,229,0.25)] text-center space-y-6">
         
         {/* Animated Cyber Core Icon */}
-        <div className="inline-flex p-4 rounded-full bg-[#11192e] border border-[#00f3ff]/50 animate-pulse">
-          <Cpu className="text-[#00f3ff]" size={42} />
+        <div className="inline-flex p-4 rounded-full bg-[#11192e] border border-[#6ddce5]/50 animate-pulse">
+          <Cpu className="text-[#6ddce5]" size={42} />
         </div>
 
         <div>
-          <span className="text-xs font-mono text-[#00f3ff] uppercase tracking-widest block mb-1">
+          <span className="text-xs font-mono text-[#6ddce5] uppercase tracking-widest block mb-1">
             СЛУЖБА АВАРИЙНОЙ РЕКОНСТРУКЦИИ // SHINRI RECOVERY
           </span>
           <h2 className="text-xl sm:text-2xl font-cyber font-bold text-white tracking-wider">
@@ -69,28 +69,28 @@ export default function RecoveryAnimation({ onComplete }) {
         <div className="p-4 bg-[#121626] border border-[#1e2740] rounded font-mono text-xs sm:text-sm text-left space-y-3">
           <div className="flex justify-between text-gray-400">
             <span>ЭТАП: {currentStepIndex + 1} / {steps.length}</span>
-            <span className="text-[#00f3ff] font-bold">{percent}%</span>
+            <span className="text-[#6ddce5] font-bold">{percent}%</span>
           </div>
 
           <div className="text-white font-semibold flex items-center gap-2">
-            <span className="text-[#00ff88]">➜</span>
+            <span className="text-[#78dfa7]">➜</span>
             <span>{steps[currentStepIndex].title}</span>
           </div>
 
           {/* ASCII Bar */}
-          <div className="text-[#00f3ff] font-mono tracking-widest text-center text-sm sm:text-base py-1 select-none">
+          <div className="text-[#6ddce5] font-mono tracking-widest text-center text-sm sm:text-base py-1 select-none">
             [{renderAsciiBar(percent)}]
           </div>
         </div>
 
         {/* Completion Statistics */}
         {isDone && (
-          <div className="p-4 bg-[#00ff88]/10 border border-[#00ff88] text-[#00ff88] font-mono text-xs sm:text-sm text-left space-y-2 animate-fade-in">
+          <div className="p-4 bg-[#78dfa7]/10 border border-[#78dfa7] text-[#78dfa7] font-mono text-xs sm:text-sm text-left space-y-2 animate-fade-in">
             <div className="flex items-center gap-2 font-bold text-white text-base">
-              <ShieldCheck className="text-[#00ff88]" size={20} />
+              <ShieldCheck className="text-[#78dfa7]" size={20} />
               <span>ВОССТАНОВЛЕНИЕ УСПЕШНО ЗАВЕРШЕНО!</span>
             </div>
-            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#00ff88]/30 text-center">
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#78dfa7]/30 text-center">
               <div>
                 <span className="block text-gray-400 text-[11px]">ФАЙЛОВ:</span>
                 <span className="text-white font-bold text-base">47</span>

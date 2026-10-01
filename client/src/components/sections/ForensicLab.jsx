@@ -28,6 +28,8 @@ import {
   Scissors
 } from 'lucide-react';
 import { SoundFX } from '../SoundFX';
+import RangeControl from '../RangeControl';
+import MicroscopeSample from '../MicroscopeSample';
 
 export default function ForensicLab({ onNavigateToReconstruction }) {
   // Solved state persisted in localStorage
@@ -176,7 +178,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
   };
 
   const handleRotateTile = (idx) => {
-    SoundFX.playClick();
+    SoundFX.playRotate();
     setCircuitTiles(prev => prev.map((t, i) => i === idx ? { ...t, rot: (t.rot + 90) % 360 } : t));
     setCircuitMessage('');
   };
@@ -197,7 +199,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
     }
 
     setIsSparking(true);
-    SoundFX.playTruthBreak();
+    SoundFX.playAccessGranted();
     setTimeout(() => setIsSparking(false), 1200);
 
     setCircuitMessage('УСПЕХ! Импульс 1200V пробит через порог! Жертва потеряла сознание при входе.');
@@ -221,7 +223,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
       wavelength: '415 нм (Гемоглобин)',
       details: 'Чёткий контур каблука женской туфли 38 размера, оставленный в луже смытой крови.',
       decoy: false,
-      color: '#00f3ff'
+      color: '#6ddce5'
     },
     sec_drain: {
       name: 'СЕКТОР #02: Плитка у дренажного слива',
@@ -233,7 +235,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
       wavelength: '415 нм (Гемоглобин)',
       details: 'Длинный размазанный след волочения, замытый влажной тканью у решётки.',
       decoy: false,
-      color: '#00f3ff'
+      color: '#6ddce5'
     },
     sec_mop: {
       name: 'СЕКТОР #03: Рукоятка швабры в подсобке',
@@ -398,10 +400,19 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
     'E_ZAP', 'E_WAREHOUSE', 'E_MOP', 'E_HANDOVER', 'E_TALK', 'E_WORKBENCH'
   ]);
   const [timelineFeedback, setTimelineFeedback] = useState('');
+  const [timelineAnnouncement, setTimelineAnnouncement] = useState('');
+  const movedTimelineControl = useRef(null);
+  useEffect(() => {
+    const control = movedTimelineControl.current;
+    if (control?.isConnected) {
+      (control.disabled ? control.parentElement.querySelector('button:not(:disabled)') : control)?.focus();
+    }
+  }, [timelineOrder]);
   const [isSimulatingTimeline, setIsSimulatingTimeline] = useState(false);
   const [simulatedIndex, setSimulatedIndex] = useState(-1);
 
-  const moveTimelineItem = (index, direction) => {
+  const moveTimelineItem = (index, direction, control) => {
+    movedTimelineControl.current = control;
     SoundFX.playClick();
     const targetIndex = index + direction;
     if (targetIndex < 0 || targetIndex >= timelineOrder.length) return;
@@ -410,6 +421,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
     copy[index] = copy[targetIndex];
     copy[targetIndex] = temp;
     setTimelineOrder(copy);
+    setTimelineAnnouncement(`Событие «${timelineEvents.find(e => e.id === temp)?.title}» перемещено на позицию ${targetIndex + 1} из ${copy.length}.`);
     setTimelineFeedback('');
   };
 
@@ -469,7 +481,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
     }
 
     setIsTrapOpen(true);
-    SoundFX.playTruthBreak();
+    SoundFX.playAccessGranted();
     setTrapMessage('ЩЕЛЧОК! Зубья капкана раскрыты! Из пружины механизма извлечены микроволокна перчаток зачернённого.');
     markPuzzleSolved('trap');
   };
@@ -480,6 +492,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
   const [selectedTool, setSelectedTool] = useState(null);
   const [cutAngle, setCutAngle] = useState(15); // Target: 45 deg
   const [magnification, setMagnification] = useState(50); // Target: 80%+
+  const [microscopeFocus, setMicroscopeFocus] = useState(60);
   const [overlayBlend, setOverlayBlend] = useState(0); // 0 = split, 100 = overlay
   const [microscopeMessage, setMicroscopeMessage] = useState('');
 
@@ -505,7 +518,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
     }
 
     if (matchScore >= 95) {
-      SoundFX.playTruthBreak();
+      SoundFX.playAccessGranted();
       setMicroscopeMessage('100% ТРАСОЛОГИЧЕСКОЕ СОВПАДЕНИЕ! Монтажные кусачки с верстака оставили диагональный срез 45° на стяжках жертвы и медном кабеле.');
       markPuzzleSolved('workbench');
     } else {
@@ -515,56 +528,56 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      
+    <div className="forensic-lab space-y-6 max-w-5xl mx-auto">
+
       {/* Toast Notification */}
       {rewardToast && (
-        <div className="fixed top-5 right-5 z-50 p-4 bg-[#142618] border-2 border-[#00ff88] text-[#00ff88] font-cyber text-sm rounded shadow-[0_0_25px_rgba(0,255,136,0.5)] animate-bounce flex items-center gap-3">
-          <Award size={20} className="text-[#00ff88]" />
+        <div className="reward-toast fixed bottom-5 right-5 z-50 p-4 bg-[#142618] border-2 border-[#78dfa7] text-[#78dfa7] font-interface text-sm rounded shadow-[0_0_25px_rgba(120,223,167,0.5)]  flex items-center gap-3">
+          <Award size={20} className="text-[#78dfa7]" />
           <span className="font-bold tracking-wider">{rewardToast}</span>
         </div>
       )}
 
       {/* Header Banner */}
-      <div className="cyber-panel p-5 bg-[#0b0e17] border-2 border-[#00f3ff]/40 shadow-[0_0_20px_rgba(0,243,255,0.12)] relative overflow-hidden">
+      <div className="cyber-panel p-5 bg-[#0b0e17] border-2 border-[#6ddce5]/40 shadow-[0_0_20px_rgba(109,220,229,0.12)] relative overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1b2542] pb-3 mb-4">
           <div>
-            <span className="text-xs font-mono text-[#00f3ff] uppercase tracking-wider block">
+            <span className="text-sm font-interface text-[#6ddce5] uppercase tracking-wider block">
               КРИМИНАЛИСТИЧЕСКАЯ ЭКСПЕРТИЗА // РАССЛЕДОВАНИЕ ВЕЩДОКОВ
             </span>
-            <h2 className="text-xl sm:text-2xl font-cyber font-bold text-white flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-interface font-bold text-white flex items-center gap-2">
               <Zap className="text-[#ff2a85]" size={22} />
-              <span>03 ЛАБОРАТОРИЯ ВЕЩДОКОВ И ГОЛОВОЛОМКИ</span>
+              <span>Лаборатория улик</span>
             </h2>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={handleResetPuzzles}
-              className="text-[10px] font-mono text-gray-500 hover:text-gray-300 underline flex items-center gap-1"
+              className="text-sm font-interface text-gray-500 hover:text-gray-300 underline flex items-center gap-1"
             >
               <RotateCcw size={11} />
               <span>Сбросить</span>
             </button>
-            <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider rounded border border-[#00ff88] bg-[#00ff88]/15 text-[#00ff88]">
+            <span className="px-3 py-1 text-sm font-interface font-bold tracking-wider rounded border border-[#78dfa7] bg-[#78dfa7]/15 text-[#78dfa7]">
               РЕШЕНО: {solvedCount} / 5
             </span>
           </div>
         </div>
 
-        <p className="text-xs font-mono text-gray-300 leading-relaxed mb-4">
-          Исследуйте материальные улики инцидента в мусоросжигателе. Каждая решённая криминалистическая головоломка шаг за шагом раскрывает скрытые символы имени убийцы для трибунала.
+        <p className="text-sm font-interface text-gray-300 leading-relaxed mb-4">
+          Исследуйте улики и соберите фрагменты имени для итогового вердикта.
         </p>
 
         {/* Letters Progress Bar (Dynamic from Server) */}
         <div className="p-3.5 bg-[#070a12] border border-[#1d2745] rounded-lg">
-          <div className="flex items-center justify-between text-xs font-mono text-gray-400 mb-2">
-            <span className="flex items-center gap-1.5 text-[#00f3ff] font-bold">
-              <Sparkles size={14} className="text-[#00f3ff]" />
-              <span>РАСШИФРОВАННЫЕ БУКВЫ ИМЕНИ ЗАЧЕРНЁННОГО:</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-interface text-gray-400 mb-2">
+            <span className="flex items-center gap-1.5 text-[#6ddce5] font-bold">
+              <Sparkles size={14} className="text-[#6ddce5]" />
+              <span>Собранные фрагменты имени</span>
             </span>
-            <span className="text-[11px] text-gray-500 font-mono">
-              РЕШЕНО УЗЛОВ: {solvedCount} / 5
+            <span className="text-sm text-gray-500 font-interface">
+              {solvedCount} из 5
             </span>
           </div>
 
@@ -575,14 +588,14 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
               return (
                 <div
                   key={slot.id}
-                  className={`flex-1 min-w-[50px] h-12 rounded border flex flex-col items-center justify-center font-cyber font-bold transition-all ${
+                  className={`flex-1 min-w-0 h-12 rounded border flex flex-col items-center justify-center font-interface font-bold transition-all ${
                     isRevealed
-                      ? 'bg-[#00ff88]/15 border-[#00ff88] text-[#00ff88] shadow-[0_0_15px_rgba(0,255,136,0.3)] scale-105 text-base sm:text-lg'
+                      ? 'bg-[#78dfa7]/15 border-[#78dfa7] text-[#78dfa7] shadow-[0_0_15px_rgba(120,223,167,0.3)] scale-105 text-base sm:text-lg'
                       : 'bg-[#0e1322] border-[#222c47] text-gray-600 text-sm'
                   }`}
                 >
                   <span className="tracking-widest">{isRevealed ? (letterVal || '...') : '■'}</span>
-                  <span className="text-[8px] font-mono text-gray-500">#{idx + 1}</span>
+                  <span className="text-sm font-interface text-gray-500">#{idx + 1}</span>
                 </div>
               );
             })}
@@ -592,7 +605,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
             <div className="mt-3 text-center">
               <button
                 onClick={onNavigateToReconstruction}
-                className="dr-btn dr-btn-primary py-2 px-6 text-xs font-cyber font-bold flex items-center justify-center gap-2 mx-auto"
+                className="dr-btn dr-btn-primary py-2 px-6 text-sm font-interface font-bold flex items-center justify-center gap-2 mx-auto"
               >
                 <span>ПЕРЕЙТИ К ФИНАЛЬНОЙ РЕКОНСТРУКЦИИ ИМЕНИ</span>
                 <ChevronRight size={14} />
@@ -602,87 +615,98 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
         </div>
       </div>
 
+      <label className="puzzle-select" htmlFor="active-analysis">Анализ улики
+        <select id="active-analysis" aria-label="Анализ улики" value={activePuzzleId} onChange={(e) => { setActivePuzzleId(e.target.value); SoundFX.playNavigate(); }}>
+          {puzzleSlots.map((slot) => <option key={slot.id} value={slot.id}>{slot.hint}{solvedPuzzles[slot.id] ? ' — завершено' : ''}</option>)}
+        </select>
+      </label>
       {/* Puzzle Tabs Navigation */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-mono">
+      <div className="puzzle-tabs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 text-sm font-interface">
         <button
-          onClick={() => { SoundFX.playClick(); setActivePuzzleId('circuit'); }}
+          onClick={() => { SoundFX.playNavigate(); setActivePuzzleId('circuit'); }}
+          aria-pressed={activePuzzleId === 'circuit'}
           className={`p-2.5 rounded-lg border text-left transition-all ${
             activePuzzleId === 'circuit'
-              ? 'bg-[#151f38] border-[#00f3ff] text-white shadow-[0_0_12px_rgba(0,243,255,0.25)]'
+              ? 'bg-[#151f38] border-[#6ddce5] text-white shadow-[0_0_12px_rgba(109,220,229,0.25)]'
               : 'bg-[#0a0d17] border-[#1b233a] text-gray-400 hover:bg-[#0f1424]'
           }`}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-[#00f3ff] font-bold">#1 ЭЛЕКТРОЦЕПЬ</span>
-            {solvedPuzzles.circuit && <CheckCircle2 size={13} className="text-[#00ff88]" />}
+            <span className="text-sm text-[#6ddce5] font-bold">#1 ЭЛЕКТРОЦЕПЬ</span>
+            {solvedPuzzles.circuit && <CheckCircle2 size={13} className="text-gray-400" />}
           </div>
-          <div className="font-semibold truncate">Ротация узлов</div>
+          <div className="font-semibold">Ротация узлов</div>
         </button>
 
         <button
-          onClick={() => { SoundFX.playClick(); setActivePuzzleId('uv'); }}
+          onClick={() => { SoundFX.playNavigate(); setActivePuzzleId('uv'); }}
+          aria-pressed={activePuzzleId === 'uv'}
           className={`p-2.5 rounded-lg border text-left transition-all ${
             activePuzzleId === 'uv'
-              ? 'bg-[#151f38] border-[#00f3ff] text-white shadow-[0_0_12px_rgba(0,243,255,0.25)]'
+              ? 'bg-[#151f38] border-[#6ddce5] text-white shadow-[0_0_12px_rgba(109,220,229,0.25)]'
               : 'bg-[#0a0d17] border-[#1b233a] text-gray-400 hover:bg-[#0f1424]'
           }`}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-[#ff2a85] font-bold">#2 УФ-СКАНИРОВАНИЕ</span>
-            {solvedPuzzles.uv && <CheckCircle2 size={13} className="text-[#00ff88]" />}
+            <span className="text-sm text-gray-400 font-bold">#2 УФ-СКАНИРОВАНИЕ</span>
+            {solvedPuzzles.uv && <CheckCircle2 size={13} className="text-gray-400" />}
           </div>
-          <div className="font-semibold truncate">Люминол и спектр</div>
+          <div className="font-semibold">Люминол и спектр</div>
         </button>
 
         <button
-          onClick={() => { SoundFX.playClick(); setActivePuzzleId('timeline'); }}
+          onClick={() => { SoundFX.playNavigate(); setActivePuzzleId('timeline'); }}
+          aria-pressed={activePuzzleId === 'timeline'}
           className={`p-2.5 rounded-lg border text-left transition-all ${
             activePuzzleId === 'timeline'
-              ? 'bg-[#151f38] border-[#00f3ff] text-white shadow-[0_0_12px_rgba(0,243,255,0.25)]'
+              ? 'bg-[#151f38] border-[#6ddce5] text-white shadow-[0_0_12px_rgba(109,220,229,0.25)]'
               : 'bg-[#0a0d17] border-[#1b233a] text-gray-400 hover:bg-[#0f1424]'
           }`}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-amber-400 font-bold">#3 ТАЙМЛАЙН</span>
-            {solvedPuzzles.timeline && <CheckCircle2 size={13} className="text-[#00ff88]" />}
+            <span className="text-sm text-gray-400 font-bold">#3 ТАЙМЛАЙН</span>
+            {solvedPuzzles.timeline && <CheckCircle2 size={13} className="text-gray-400" />}
           </div>
-          <div className="font-semibold truncate">Сетка таймингов</div>
+          <div className="font-semibold">Сетка таймингов</div>
         </button>
 
         <button
-          onClick={() => { SoundFX.playClick(); setActivePuzzleId('trap'); }}
+          onClick={() => { SoundFX.playNavigate(); setActivePuzzleId('trap'); }}
+          aria-pressed={activePuzzleId === 'trap'}
           className={`p-2.5 rounded-lg border text-left transition-all ${
             activePuzzleId === 'trap'
-              ? 'bg-[#151f38] border-[#00f3ff] text-white shadow-[0_0_12px_rgba(0,243,255,0.25)]'
+              ? 'bg-[#151f38] border-[#6ddce5] text-white shadow-[0_0_12px_rgba(109,220,229,0.25)]'
               : 'bg-[#0a0d17] border-[#1b233a] text-gray-400 hover:bg-[#0f1424]'
           }`}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-[#00ff88] font-bold">#4 КАПКАН</span>
-            {solvedPuzzles.trap && <CheckCircle2 size={13} className="text-[#00ff88]" />}
+            <span className="text-sm text-gray-400 font-bold">#4 КАПКАН</span>
+            {solvedPuzzles.trap && <CheckCircle2 size={13} className="text-gray-400" />}
           </div>
-          <div className="font-semibold truncate">Храповик и натяжение</div>
+          <div className="font-semibold">Храповик и натяжение</div>
         </button>
 
         <button
-          onClick={() => { SoundFX.playClick(); setActivePuzzleId('workbench'); }}
+          onClick={() => { SoundFX.playNavigate(); setActivePuzzleId('workbench'); }}
+          aria-pressed={activePuzzleId === 'workbench'}
           className={`p-2.5 rounded-lg border text-left transition-all ${
             activePuzzleId === 'workbench'
-              ? 'bg-[#151f38] border-[#00f3ff] text-white shadow-[0_0_12px_rgba(0,243,255,0.25)]'
+              ? 'bg-[#151f38] border-[#6ddce5] text-white shadow-[0_0_12px_rgba(109,220,229,0.25)]'
               : 'bg-[#0a0d17] border-[#1b233a] text-gray-400 hover:bg-[#0f1424]'
           }`}
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-purple-400 font-bold">#5 ВЕРСТАК</span>
-            {solvedPuzzles.workbench && <CheckCircle2 size={13} className="text-[#00ff88]" />}
+            <span className="text-sm text-gray-400 font-bold">#5 ВЕРСТАК</span>
+            {solvedPuzzles.workbench && <CheckCircle2 size={13} className="text-gray-400" />}
           </div>
-          <div className="font-semibold truncate">Микроскоп среза</div>
+          <div className="font-semibold">Микроскоп среза</div>
         </button>
       </div>
 
+      <p className="lab-purpose">Выберите анализ, исследуйте образец и зафиксируйте заключение.</p>
       {/* Active Puzzle Workspace */}
-      <div className="cyber-panel p-6 bg-[#090c15] border border-[#202945] rounded-xl font-mono">
-        
+      <div className="lab-workspace cyber-panel p-6 bg-[#090c15] border border-[#202945] rounded-xl font-interface">
+
         {/* ================================================================= */}
         {/* PUZZLE 1: CIRCUIT ROTATION (CYBER PCB BOARD) */}
         {/* ================================================================= */}
@@ -690,26 +714,26 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between border-b border-[#1b2540] pb-3 gap-2">
               <div>
-                <span className="text-[11px] text-[#00f3ff] font-bold uppercase">ВЕЩДОК: ОСТАТКИ ЭЛЕКТРОЛОВУШКИ</span>
-                <h3 className="text-lg font-cyber font-bold text-white">
-                  РОТАЦИЯ УЗЛОВ ЭЛЕКТРОЦЕПИ И БАЛАНСИРОВКА НАПРЯЖЕНИЯ
+                <span className="text-sm text-[#6ddce5] font-bold uppercase">ВЕЩДОК: ОСТАТКИ ЭЛЕКТРОЛОВУШКИ</span>
+                <h3 className="text-lg font-interface font-bold text-white">
+                  Ротация узлов электроцепи и балансировка напряжения
                 </h3>
               </div>
-              <span className="text-xs bg-[#00f3ff]/10 text-[#00f3ff] px-2.5 py-1 rounded border border-[#00f3ff]/30 font-bold">
-                НАГРАДА: БУКВА #1 [ К ]
+              <span className="text-sm bg-[#6ddce5]/10 text-[#6ddce5] px-2.5 py-1 rounded border border-[#6ddce5]/30 font-bold">
+                Заключение анализа
               </span>
             </div>
 
-            <p className="text-xs text-gray-300 leading-relaxed">
-              На пороге мусоросжигателя обнаружен импульсный разрядник. Кликайте по микросхемам для их вращения, чтобы соединить сплошную светящуюся неоновую шину от аккумулятора к порогу, и отрегулируйте напряжение импульса до поражающего значения (≥1200V).
+            <p className="text-sm text-gray-300 leading-relaxed">
+              На пороге мусоросжигателя обнаружен импульсный разрядник. Поворачивайте узлы нажатием, чтобы соединить сплошную светящуюся неоновую шину от аккумулятора к порогу, и отрегулируйте напряжение импульса до поражающего значения (≥1200V).
             </p>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Interactive Rotatable PCB Board */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs text-gray-400 font-bold">
-                  <span>ПЕЧАТНАЯ ПЛАТА УПРАВЛЕНИЯ (КЛИК ДЛЯ РОТАЦИИ):</span>
-                  <span className="text-[#00f3ff] text-[10px]">
+                <div className="flex items-center justify-between text-sm text-gray-400 font-bold">
+                  <span>Плата управления</span>
+                  <span className="text-[#6ddce5] text-sm">
                     {isCircuitAligned ? '✓ ЦЕПЬ ЗАМКНУТА' : '⚠ ОБРЫВ КОНТУРА'}
                   </span>
                 </div>
@@ -717,23 +741,22 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                 <div className="grid grid-cols-3 gap-3 p-3 bg-[#060a14] border-2 border-[#1c2848] rounded-xl relative shadow-inner">
                   {circuitTiles.map((tile, idx) => {
                     const isPowered = Boolean(nodePowerMap[idx]);
-                    const isTileCorrect = tile.rot === tile.targetRot;
+
 
                     return (
                       <button
                         key={tile.id}
+                        aria-label={`${tile.label}, угол ${tile.rot}°. Повернуть на 90°`}
                         onClick={() => handleRotateTile(idx)}
                         className={`p-3 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-2 group relative overflow-hidden ${
                           isPowered
-                            ? 'bg-[#0f1d35] border-[#00f3ff] text-[#00f3ff] shadow-[0_0_15px_rgba(0,243,255,0.3)]'
-                            : isTileCorrect
-                            ? 'bg-[#0b1222] border-[#223b5d] text-gray-300'
+                            ? 'bg-[#0f1d35] border-[#6ddce5] text-[#6ddce5] shadow-[0_0_15px_rgba(109,220,229,0.3)]'
                             : 'bg-[#070b14] border-[#182138] text-gray-500 hover:border-gray-500'
                         }`}
                       >
                         {/* Status Power Pill */}
                         <div className={`absolute top-1 right-1 w-2 h-2 rounded-full ${
-                          isPowered ? 'bg-[#00ff88] shadow-[0_0_6px_#00ff88]' : 'bg-gray-700'
+                          isPowered ? 'bg-[#78dfa7] shadow-[0_0_6px_#78dfa7]' : 'bg-gray-700'
                         }`} />
 
                         {/* Interactive SVG Node Graphic */}
@@ -743,13 +766,13 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                         >
                           <svg viewBox="0 0 100 100" className="w-full h-full">
                             {/* Circuit substrate */}
-                            <rect x="5" y="5" width="90" height="90" rx="8" fill="#090f1d" stroke={isPowered ? "#00f3ff" : "#1a2540"} strokeWidth="2" />
-                            <circle cx="50" cy="50" r="8" fill={isPowered ? "#00ff88" : "#223150"} />
+                            <rect x="5" y="5" width="90" height="90" rx="8" fill="#090f1d" stroke={isPowered ? "#6ddce5" : "#1a2540"} strokeWidth="2" />
+                            <circle cx="50" cy="50" r="8" fill={isPowered ? "#78dfa7" : "#223150"} />
 
                             {/* Conduit tracks depending on component type */}
                             {tile.type === 'straight' && (
                               <g>
-                                <line x1="0" y1="50" x2="100" y2="50" stroke={isPowered ? "#00f3ff" : "#3b4d75"} strokeWidth="8" strokeLinecap="round" />
+                                <line x1="0" y1="50" x2="100" y2="50" stroke={isPowered ? "#6ddce5" : "#3b4d75"} strokeWidth="8" strokeLinecap="round" />
                                 {isPowered && (
                                   <line x1="0" y1="50" x2="100" y2="50" stroke="#ffffff" strokeWidth="3" strokeDasharray="8 6" className="animate-pulse" />
                                 )}
@@ -758,7 +781,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
 
                             {tile.type === 'corner' && (
                               <g>
-                                <path d="M 0 50 L 50 50 L 50 100" fill="none" stroke={isPowered ? "#00f3ff" : "#3b4d75"} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M 0 50 L 50 50 L 50 100" fill="none" stroke={isPowered ? "#6ddce5" : "#3b4d75"} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
                                 {isPowered && (
                                   <path d="M 0 50 L 50 50 L 50 100" fill="none" stroke="#ffffff" strokeWidth="3" strokeDasharray="8 6" className="animate-pulse" />
                                 )}
@@ -768,23 +791,23 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                             {tile.type === 'source' && (
                               <g>
                                 <rect x="25" y="30" width="30" height="40" rx="4" fill={isPowered ? "#ff2a85" : "#451a2f"} />
-                                <line x1="55" y1="50" x2="100" y2="50" stroke={isPowered ? "#00f3ff" : "#3b4d75"} strokeWidth="8" strokeLinecap="round" />
+                                <line x1="55" y1="50" x2="100" y2="50" stroke={isPowered ? "#6ddce5" : "#3b4d75"} strokeWidth="8" strokeLinecap="round" />
                                 <text x="40" y="55" textAnchor="middle" fill="#ffffff" fontSize="18" fontWeight="bold">⚡</text>
                               </g>
                             )}
 
                             {tile.type === 'sink' && (
                               <g>
-                                <line x1="0" y1="50" x2="50" y2="50" stroke={isPowered ? "#00f3ff" : "#3b4d75"} strokeWidth="8" strokeLinecap="round" />
-                                <polygon points="50,30 80,50 50,70" fill={isPowered ? "#00ff88" : "#214732"} />
+                                <line x1="0" y1="50" x2="50" y2="50" stroke={isPowered ? "#6ddce5" : "#3b4d75"} strokeWidth="8" strokeLinecap="round" />
+                                <polygon points="50,30 80,50 50,70" fill={isPowered ? "#78dfa7" : "#214732"} />
                               </g>
                             )}
                           </svg>
                         </div>
 
                         <div className="text-center w-full">
-                          <span className="text-[10px] font-bold block truncate">{tile.label}</span>
-                          <span className="text-[9px] text-gray-500 font-mono">{tile.rot}°</span>
+                          <span className="text-sm font-bold block">{['12 В', 'Шина', 'Ёмкость', 'Реостат', 'Импульс', 'Выход'][idx]}</span>
+                          <span className="text-sm text-gray-500 font-interface">{tile.rot}°</span>
                         </div>
                       </button>
                     );
@@ -795,51 +818,43 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
               {/* Voltage Balance & Oscilloscope Display */}
               <div className="space-y-4 bg-[#060812] p-5 rounded-xl border border-[#1b2645] flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between text-xs text-gray-300 mb-2">
+                  <div className="flex items-center justify-between text-sm text-gray-300 mb-2">
                     <span className="font-bold flex items-center gap-1.5">
                       <Zap size={15} className="text-amber-400" />
-                      <span>ИМПУЛЬСНОЕ НАПРЯЖЕНИЕ:</span>
+                      <span>Импульсное напряжение</span>
                     </span>
-                    <span className={`font-cyber font-bold text-lg ${
-                      targetVoltage >= 1200 ? 'text-[#00ff88]' : 'text-amber-400'
+                    <span className={`font-interface font-bold text-lg ${
+                      targetVoltage >= 1200 ? 'text-[#78dfa7]' : 'text-amber-400'
                     }`}>
                       {targetVoltage} V
                     </span>
                   </div>
 
-                  <input
-                    type="range"
-                    min="200"
-                    max="1800"
-                    step="100"
-                    value={targetVoltage}
-                    onChange={(e) => setTargetVoltage(Number(e.target.value))}
-                    className="w-full accent-[#00f3ff] cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                  <RangeControl label="Напряжение импульса" value={targetVoltage} min={200} max={1800} step={100} unit="В" onChange={setTargetVoltage} />
+                  <div className="flex justify-between text-sm text-gray-500 mt-1">
                     <span>200V (Слабо)</span>
-                    <span className="text-[#00ff88] font-bold">1200V (Порог оглушения)</span>
+                    <span className="text-[#78dfa7] font-bold">1200V (Порог оглушения)</span>
                     <span>1800V (Перегрузка)</span>
                   </div>
 
                   {/* Real-time Oscilloscope Waveform Display */}
                   <div className="mt-4 p-3 bg-[#03060c] border border-[#18233c] rounded-lg">
-                    <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1.5 font-mono">
+                    <div className="flex items-center justify-between text-sm text-gray-400 mb-1.5 font-interface">
                       <span>ОСЦИЛЛОГРАФ ИМПУЛЬСА (V/t):</span>
-                      <span className={targetVoltage >= 1200 ? 'text-[#00ff88]' : 'text-amber-400'}>
-                        {targetVoltage >= 1200 ? '⚡ КРИТИЧЕСКИЙ РАЗРЯД' : 'НЕДОСТАТОЧНО'}
+                      <span className={targetVoltage >= 1200 ? 'text-[#78dfa7]' : 'text-amber-400'}>
+                        {targetVoltage >= 1200 ? '⚡ КРИТИЧЕСКИЙ РАЗРЯД' : 'Низкий импульс'}
                       </span>
                     </div>
 
                     <div className="h-20 bg-[#020408] border border-[#141d30] rounded relative overflow-hidden flex items-center justify-center">
-                      <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#00f3ff_1px,transparent_1px)] [background-size:12px_12px]" />
-                      
+                      <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#6ddce5_1px,transparent_1px)] [background-size:12px_12px]" />
+
                       {/* Dynamic SVG Waveform */}
                       <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 300 80">
                         <path
                           d={`M 0 40 Q 30 ${40 - (targetVoltage / 40)}, 60 40 T 120 40 T 180 40 T 240 40 T 300 40`}
                           fill="none"
-                          stroke={targetVoltage >= 1200 ? (isCircuitAligned ? "#00ff88" : "#00f3ff") : "#eab308"}
+                          stroke={targetVoltage >= 1200 ? (isCircuitAligned ? "#78dfa7" : "#6ddce5") : "#eab308"}
                           strokeWidth="3"
                           strokeLinecap="round"
                         />
@@ -849,9 +864,9 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                       </svg>
                     </div>
 
-                    <div className="mt-2 text-[11px] text-gray-400 flex items-center justify-between">
+                    <div className="mt-2 text-sm text-gray-400 flex items-center justify-between">
                       <span>Статус контура:</span>
-                      <strong className={isCircuitAligned ? 'text-[#00ff88]' : 'text-amber-400'}>
+                      <strong className={isCircuitAligned ? 'text-[#78dfa7]' : 'text-amber-400'}>
                         {isCircuitAligned ? 'ШИНА ЗАМКНУТА (ТОК ТЕЧЁТ)' : 'ОБРЫВ ПРОВОДНИКА'}
                       </strong>
                     </div>
@@ -861,18 +876,18 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                 <div className="space-y-2 pt-2">
                   <button
                     onClick={handleTestCircuit}
-                    className="w-full dr-btn dr-btn-primary py-3 text-xs font-cyber font-bold flex items-center justify-center gap-2 shadow-[0_0_18px_rgba(255,42,133,0.35)]"
+                    className="w-full dr-btn dr-btn-primary py-3 text-sm font-interface font-bold flex items-center justify-center gap-2 shadow-[0_0_18px_rgba(255,42,133,0.35)]"
                   >
                     <Zap size={16} />
                     <span>ПРОИЗВЕСТИ ИМПУЛЬСНЫЙ РАЗРЯД</span>
                   </button>
 
                   {circuitMessage && (
-                    <div className={`p-2.5 rounded text-xs border font-mono animate-fade-in ${
+                    <div className={`p-2.5 rounded text-sm border font-interface animate-fade-in ${
                       circuitMessage.startsWith('УСПЕХ')
-                        ? 'bg-[#00ff88]/15 border-[#00ff88] text-[#00ff88]'
+                        ? 'bg-[#78dfa7]/15 border-[#78dfa7] text-[#78dfa7]'
                         : 'bg-[#ff2a85]/15 border-[#ff2a85] text-[#ff2a85]'
-                    }`}>
+                    }`} role="status" aria-live="polite">
                       {circuitMessage}
                     </div>
                   )}
@@ -889,18 +904,18 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between border-b border-[#1b2540] pb-3 gap-2">
               <div>
-                <span className="text-[11px] text-[#ff2a85] font-bold uppercase">ВЕЩДОК: ШВАБРА И СМЫТЫЙ ПОЛ</span>
-                <h3 className="text-lg font-cyber font-bold text-white">
-                  ДВУХФАЗНЫЙ АНАЛИЗ: ЛЮМИНОЛ + УФ-СПЕКТРОМЕТРИЯ (365 нм)
+                <span className="text-sm text-[#ff2a85] font-bold uppercase">ВЕЩДОК: ШВАБРА И СМЫТЫЙ ПОЛ</span>
+                <h3 className="text-lg font-interface font-bold text-white">
+                  Двухфазный анализ: люминол + уф-спектрометрия (365 нм)
                 </h3>
               </div>
-              <span className="text-xs bg-[#ff2a85]/15 text-[#ff2a85] px-2.5 py-1 rounded border border-[#ff2a85]/40 font-bold">
-                НАГРАДА: БУКВА #2 [ И ]
+              <span className="text-sm bg-[#ff2a85]/15 text-[#ff2a85] px-2.5 py-1 rounded border border-[#ff2a85]/40 font-bold">
+                Заключение анализа
               </span>
             </div>
 
-            <p className="text-xs text-gray-300 leading-relaxed">
-              Убийца вымыл кафельный пол шваброй, пытаясь уничтожить следы преступления. 
+            <p className="text-sm text-gray-300 leading-relaxed">
+              Убийца вымыл кафельный пол шваброй, пытаясь уничтожить следы преступления.
               <br />
               1. <strong>Нанесите Люминол</strong> на подозрительные зоны, чтобы вызвать хемилюминесцентную реакцию с белками крови.
               <br />
@@ -908,22 +923,22 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
             </p>
 
             {/* Tactical Control Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-[#070914] p-3 border border-[#1b2645] rounded-xl font-mono text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-[#070914] p-3 border border-[#1b2645] rounded-xl font-interface text-sm">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-gray-400 font-bold">РЕЖИМ ОБСЛЕДОВАНИЯ:</span>
                 <button
-                  onClick={() => { SoundFX.playClick(); setSelectedToolUv('luminol'); }}
-                  className={`px-3 py-1.5 rounded text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                  onClick={() => { SoundFX.playScan(); setSelectedToolUv('luminol'); }} aria-pressed={selectedToolUv === 'luminol'}
+                  className={`px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 ${
                     selectedToolUv === 'luminol'
-                      ? 'bg-[#00f3ff]/20 border-[#00f3ff] text-[#00f3ff] shadow-[0_0_12px_rgba(0,243,255,0.3)]'
+                      ? 'bg-[#6ddce5]/20 border-[#6ddce5] text-[#6ddce5] shadow-[0_0_12px_rgba(109,220,229,0.3)]'
                       : 'bg-[#111728] border-gray-700 text-gray-400'
                   }`}
                 >
                   <span>🧪 1. ПУЛЬВЕРИЗАТОР ЛЮМИНОЛА</span>
                 </button>
                 <button
-                  onClick={() => { SoundFX.playClick(); setSelectedToolUv('spectrometer'); }}
-                  className={`px-3 py-1.5 rounded text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                  onClick={() => { SoundFX.playScan(); setSelectedToolUv('spectrometer'); }} aria-pressed={selectedToolUv === 'spectrometer'}
+                  className={`px-3 py-1.5 rounded text-sm font-bold border transition-all flex items-center gap-1.5 ${
                     selectedToolUv === 'spectrometer'
                       ? 'bg-[#c084fc]/20 border-[#c084fc] text-[#c084fc] shadow-[0_0_12px_rgba(192,132,252,0.3)]'
                       : 'bg-[#111728] border-gray-700 text-gray-400'
@@ -935,12 +950,12 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
               </div>
 
               {/* UV Flashlight Toggle */}
-              <button
+              <button aria-pressed={uvLampOn} aria-label="УФ-лампа"
                 onClick={() => {
                   SoundFX.playClick();
                   setUvLampOn(prev => !prev);
                 }}
-                className={`px-4 py-1.5 rounded-lg text-xs font-cyber font-bold border flex items-center gap-2 transition-all ${
+                className={`px-4 py-1.5 rounded-lg text-sm font-interface font-bold border flex items-center gap-2 transition-all ${
                   uvLampOn
                     ? 'bg-[#9333ea] border-[#c084fc] text-white shadow-[0_0_20px_rgba(147,51,234,0.6)] animate-pulse'
                     : 'bg-[#161b2e] border-[#29385c] text-gray-300 hover:text-white'
@@ -958,7 +973,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                 : 'bg-[#080c18] border-[#1b2542]'
             }`}>
               {uvLampOn && (
-                <div className="absolute top-2 right-3 text-[10px] text-purple-300 font-mono flex items-center gap-1">
+                <div className="mb-3 text-sm text-purple-300 font-interface flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
                   <span>УФ-ПОЛЕ АКТИВНО // ФЛУОРЕСЦЕНЦИЯ ВИДИМА</span>
                 </div>
@@ -977,47 +992,47 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                         isGlowing
                           ? isDecoy
                             ? 'bg-[#1c1214] border-amber-600/60 shadow-[0_0_12px_rgba(234,179,8,0.25)]'
-                            : 'bg-[#071d2b] border-[#00f3ff] shadow-[0_0_20px_rgba(0,243,255,0.4)] scale-[1.02]'
+                            : 'bg-[#071d2b] border-[#6ddce5] shadow-[0_0_20px_rgba(109,220,229,0.4)] scale-[1.02]'
                           : sec.sprayed
                           ? 'bg-[#101426] border-[#304169] text-gray-300'
                           : 'bg-[#0a0e1c] border-[#18233c] text-gray-400 hover:border-gray-500'
                       }`}
                     >
-                      <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="text-white truncate">{sec.name}</span>
+                      <div className="flex items-center justify-between text-sm font-bold">
+                        <span className="text-white">{sec.name}</span>
                         {sec.scanned && (
-                          <span className={isDecoy ? 'text-red-400' : 'text-[#00ff88]'}>
+                          <span className={isDecoy ? 'text-red-400' : 'text-[#78dfa7]'}>
                             {isDecoy ? 'ЛОЖНО' : '✓ ВЕЩДОК'}
                           </span>
                         )}
                       </div>
 
-                      <div className="text-[11px] text-gray-400 font-mono">
+                      <div className="text-sm text-gray-400 font-interface">
                         Локация: <span className="text-gray-300">{sec.location}</span>
                       </div>
 
                       {/* Visual Crime Scene Graphic / Glowing Stain */}
-                      <div className={`h-16 rounded border flex items-center justify-center p-2 text-center text-xs transition-all relative ${
+                      <div className={`h-16 rounded border flex items-center justify-center p-2 text-center text-sm transition-all relative ${
                         isGlowing
                           ? isDecoy
                             ? 'bg-[#291b0c] border-amber-500/40 text-amber-300'
-                            : 'bg-[#042035] border-[#00f3ff] text-[#00f3ff]'
+                            : 'bg-[#042035] border-[#6ddce5] text-[#6ddce5]'
                           : 'bg-[#05070e] border-[#151d30] text-gray-600'
                       }`}>
                         {isGlowing ? (
                           <div className="space-y-0.5 animate-pulse">
                             <span className="text-sm block">✨</span>
-                            <span className="font-bold text-[10px] block">{sec.type === 'blood_footprint' ? 'ОТПЕЧАТОК 38Р' : sec.type === 'blood_streak' ? 'СМЫТАЯ КРОВЬ' : sec.type === 'silk_fibers' ? 'БЕЛЫЕ ВОЛОКНА' : 'МАСЛО / САЖА'}</span>
-                            <span className="text-[9px] text-gray-400">{sec.wavelength}</span>
+                            <span className="font-bold text-sm block">{sec.type === 'blood_footprint' ? 'ОТПЕЧАТОК 38Р' : sec.type === 'blood_streak' ? 'СМЫТАЯ КРОВЬ' : sec.type === 'silk_fibers' ? 'БЕЛЫЕ ВОЛОКНА' : 'МАСЛО / САЖА'}</span>
+                            <span className="text-sm text-gray-400">{sec.wavelength}</span>
                           </div>
                         ) : sec.sprayed ? (
-                          <span className="text-[10px] text-purple-300">Люминол нанесён (нужна УФ-лампа)</span>
+                          <span className="text-sm text-purple-300">Люминол нанесён (нужна УФ-лампа)</span>
                         ) : (
-                          <span className="text-[10px] text-gray-500">Не обработано (клик для распыления)</span>
+                          <span className="text-sm text-gray-500">Не обработано (клик для распыления)</span>
                         )}
                       </div>
 
-                      <div className="text-[10px] text-gray-400 leading-tight">
+                      <div className="text-sm text-gray-400 leading-tight">
                         {sec.scanned ? sec.details : 'Клик: использовать активный инструмент'}
                       </div>
                     </button>
@@ -1027,13 +1042,13 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
             </div>
 
             {uvMessage && (
-              <div className={`p-3 rounded-lg text-xs font-mono border animate-fade-in ${
+              <div className={`p-3 rounded-lg text-sm font-interface border animate-fade-in ${
                 uvMessage.includes('ВЕЩДОК ЗАФИКСИРОВАН')
-                  ? 'bg-[#00ff88]/15 border-[#00ff88] text-[#00ff88]'
+                  ? 'bg-[#78dfa7]/15 border-[#78dfa7] text-[#78dfa7]'
                   : uvMessage.includes('ОШИБКА') || uvMessage.includes('ЛОЖНЫЙ')
                   ? 'bg-[#ff2a85]/15 border-[#ff2a85] text-[#ff2a85]'
                   : 'bg-[#0d1425] border-[#233355] text-gray-200'
-              }`}>
+              }`} role="status" aria-live="polite">
                 {uvMessage}
               </div>
             )}
@@ -1047,20 +1062,21 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between border-b border-[#1b2540] pb-3 gap-2">
               <div>
-                <span className="text-[11px] text-amber-400 font-bold uppercase">ВЕЩДОК: ХРОНОЛОГИЯ ПРЕСТУПЛЕНИЯ</span>
-                <h3 className="text-lg font-cyber font-bold text-white">
-                  РЕКОНСТРУКЦИЯ СЕТКИ ВРЕМЕНИ // ХРОНО-ЛЕНТА (21:32 ➜ 21:43)
+                <span className="text-sm text-amber-400 font-bold uppercase">ВЕЩДОК: ХРОНОЛОГИЯ ПРЕСТУПЛЕНИЯ</span>
+                <h3 className="text-lg font-interface font-bold text-white">
+                  Реконструкция сетки времени // хроно-лента (21:32 ➜ 21:43)
                 </h3>
               </div>
-              <span className="text-xs bg-amber-400/15 text-amber-300 px-2.5 py-1 rounded border border-amber-400/40 font-bold">
-                НАГРАДА: БУКВА #3 [ Р ]
+              <span className="text-sm bg-amber-400/15 text-amber-300 px-2.5 py-1 rounded border border-amber-400/40 font-bold">
+                Заключение анализа
               </span>
             </div>
 
-            <p className="text-xs text-gray-300 leading-relaxed">
+            <p className="text-sm text-gray-300 leading-relaxed">
               Расставьте 6 ключевых действий убийцы в строгой последовательности, сопоставив их с поминутным хронометражем следствия. Используйте кнопки ▲ и ▼ для перемещения событий.
             </p>
 
+            <p className="sr-only" role="status" aria-live="polite">{timelineAnnouncement}</p>
             {/* Chrono-Tape Sequence */}
             <div className="space-y-3 relative">
               <div className="absolute left-6 top-4 bottom-4 w-1 bg-[#1a2542] -z-0" />
@@ -1069,24 +1085,24 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                 const event = timelineEvents.find(e => e.id === eventId);
                 const assignedTimes = ['21:32', '21:35', '21:38', '21:40', '21:41', '21:43'];
                 const assignedTime = assignedTimes[index];
-                const isCorrectSlot = event.targetTime === assignedTime;
+                const isCorrectSlot = Boolean(solvedPuzzles.timeline) && event.targetTime === assignedTime;
                 const isCurrentSimulated = simulatedIndex === index;
 
                 return (
                   <div
                     key={eventId}
-                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all relative z-10 ${
+                    className={`timeline-item flex items-center justify-between p-3.5 rounded-xl border transition-all relative z-10 ${
                       isCurrentSimulated
-                        ? 'bg-[#182a4d] border-[#00f3ff] shadow-[0_0_20px_rgba(0,243,255,0.4)] scale-[1.02]'
+                        ? 'bg-[#182a4d] border-[#6ddce5] shadow-[0_0_20px_rgba(109,220,229,0.4)] scale-[1.02]'
                         : isCorrectSlot
-                        ? 'bg-[#0b1726] border-[#00ff88]/50 shadow-[0_0_10px_rgba(0,255,136,0.15)]'
-                        : 'bg-[#0a0e1c] border-[#1d2745] hover:border-[#00f3ff]/40'
+                        ? 'bg-[#0b1726] border-[#78dfa7]/50 shadow-[0_0_10px_rgba(120,223,167,0.15)]'
+                        : 'bg-[#0a0e1c] border-[#1d2745] hover:border-[#6ddce5]/40'
                     }`}
                   >
                     <div className="flex items-center gap-3.5">
                       {/* Time Marker Badge */}
                       <div className="flex flex-col items-center">
-                        <span className="w-12 h-10 rounded-lg bg-[#141d33] border border-[#233358] text-amber-400 font-bold font-mono text-xs flex items-center justify-center shadow">
+                        <span className="w-12 h-10 rounded-lg bg-[#141d33] border border-[#233358] text-amber-400 font-bold font-interface text-sm flex items-center justify-center shadow">
                           {assignedTime}
                         </span>
                       </div>
@@ -1094,15 +1110,15 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <span className="text-base">{event.icon}</span>
-                          <span className="text-xs text-white font-bold">{event.title}</span>
-                          <span className="text-[10px] bg-[#162038] text-gray-400 px-2 py-0.5 rounded border border-[#25355a]">
+                          <span className="text-sm text-white font-bold">{event.title}</span>
+                          <span className="text-sm bg-[#162038] text-gray-400 px-2 py-0.5 rounded border border-[#25355a]">
                             {event.tag}
                           </span>
                           {isCorrectSlot && (
-                            <span className="text-[10px] text-[#00ff88] font-bold">✓ ВЕРНО</span>
+                            <span className="text-sm text-[#78dfa7] font-bold">✓ ВЕРНО</span>
                           )}
                         </div>
-                        <p className="text-[11px] text-gray-400 leading-tight">
+                        <p className="text-sm text-gray-400 leading-tight">
                           {event.desc}
                         </p>
                       </div>
@@ -1110,7 +1126,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
 
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
                       <button
-                        onClick={() => moveTimelineItem(index, -1)}
+                        aria-label={`Выше: ${event.title}`} onClick={(e) => moveTimelineItem(index, -1, e.currentTarget)}
                         disabled={index === 0 || isSimulatingTimeline}
                         className="p-1.5 rounded bg-[#162038] hover:bg-[#223155] disabled:opacity-30 text-gray-300 hover:text-white transition-colors border border-[#273860]"
                         title="Поднять выше"
@@ -1118,7 +1134,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                         <ArrowUp size={14} />
                       </button>
                       <button
-                        onClick={() => moveTimelineItem(index, 1)}
+                        aria-label={`Ниже: ${event.title}`} onClick={(e) => moveTimelineItem(index, 1, e.currentTarget)}
                         disabled={index === timelineOrder.length - 1 || isSimulatingTimeline}
                         className="p-1.5 rounded bg-[#162038] hover:bg-[#223155] disabled:opacity-30 text-gray-300 hover:text-white transition-colors border border-[#273860]"
                         title="Опустить ниже"
@@ -1135,14 +1151,14 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
               <button
                 onClick={handleVerifyTimeline}
                 disabled={isSimulatingTimeline}
-                className="dr-btn dr-btn-primary py-2.5 px-6 text-xs font-cyber font-bold flex items-center gap-2"
+                className="dr-btn dr-btn-primary py-2.5 px-6 text-sm font-interface font-bold flex items-center gap-2"
               >
                 <Play size={14} />
                 <span>{isSimulatingTimeline ? 'СИМУЛЯЦИЯ ХРОНОЛОГИИ...' : 'СМОДЕЛИРОВАТЬ ЦЕПОЧКУ СОБЫТИЙ'}</span>
               </button>
 
               {timelineFeedback && (
-                <div className="text-xs text-[#ff2a85] font-mono animate-fade-in">
+                <div className="text-sm text-[#ff2a85] font-interface animate-fade-in" role="status" aria-live="polite">
                   {timelineFeedback}
                 </div>
               )}
@@ -1157,26 +1173,26 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between border-b border-[#1b2540] pb-3 gap-2">
               <div>
-                <span className="text-[11px] text-[#00ff88] font-bold uppercase">ВЕЩДОК: ОХОТНИЧИЙ КАПКАН</span>
-                <h3 className="text-lg font-cyber font-bold text-white">
-                  ДЕАКТИВАЦИЯ ХРАПОВИКА И КОНТРОЛЬ НАТЯЖЕНИЯ ПРУЖИНЫ
+                <span className="text-sm text-[#78dfa7] font-bold uppercase">ВЕЩДОК: ОХОТНИЧИЙ КАПКАН</span>
+                <h3 className="text-lg font-interface font-bold text-white">
+                  Деактивация храповика и контроль натяжения пружины
                 </h3>
               </div>
-              <span className="text-xs bg-[#00ff88]/15 text-[#00ff88] px-2.5 py-1 rounded border border-[#00ff88]/40 font-bold">
-                НАГРАДА: БУКВА #4 [ У ]
+              <span className="text-sm bg-[#78dfa7]/15 text-[#78dfa7] px-2.5 py-1 rounded border border-[#78dfa7]/40 font-bold">
+                Заключение анализа
               </span>
             </div>
 
-            <p className="text-xs text-gray-300 leading-relaxed">
+            <p className="text-sm text-gray-300 leading-relaxed">
               Чтобы разжать стальные зубья капкана и освободить зажатую ткань, выставите параметры кода из материалов дела (Сектор, секунды диалога, модель капкана) и удерживайте ползунок натяжения пружины строго в безопасной зелёной зоне (70% – 80%).
             </p>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Interactive SVG Bear Trap Blueprint */}
-              <div className="p-4 bg-[#050812] border border-[#1b2645] rounded-xl flex flex-col items-center justify-center relative overflow-hidden">
-                <div className="text-[11px] text-gray-400 font-mono w-full flex items-center justify-between mb-2">
+              <div className="trap-visual self-start p-4 bg-[#050812] border border-[#1b2645] rounded-xl flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="text-sm text-gray-400 font-interface w-full flex items-center justify-between mb-2">
                   <span>СХЕМА КАПКАНА WOLF TRAP:</span>
-                  <span className={isTrapOpen ? 'text-[#00ff88] font-bold' : 'text-amber-400'}>
+                  <span className={isTrapOpen ? 'text-[#78dfa7] font-bold' : 'text-amber-400'}>
                     {isTrapOpen ? '✓ ЗАМОК ОТЖАТ' : '⚠ ЗУБЬЯ ВЗВЕДЕНЫ'}
                   </span>
                 </div>
@@ -1185,13 +1201,13 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                   <svg viewBox="0 0 300 200" className="w-full h-full max-h-48">
                     {/* Central Base & Trigger Pan */}
                     <ellipse cx="150" cy="150" rx="60" ry="20" fill="#121829" stroke="#253556" strokeWidth="3" />
-                    <circle cx="150" cy="145" r="18" fill="#1a2542" stroke={isTrapOpen ? "#00ff88" : "#ff2a85"} strokeWidth="2" />
-                    
+                    <circle cx="150" cy="145" r="18" fill="#1a2542" stroke={isTrapOpen ? "#78dfa7" : "#ff2a85"} strokeWidth="2" />
+
                     {/* Entrapped Cloth Fiber (appears when opened) */}
                     {isTrapOpen && (
                       <g className="animate-fade-in">
                         <path d="M 140 140 Q 150 120 160 145" stroke="#ffffff" strokeWidth="4" fill="none" strokeLinecap="round" />
-                        <text x="150" y="115" textAnchor="middle" fill="#00ff88" fontSize="10" fontWeight="bold">ТКАНЬ ПЕРЧАТКИ</text>
+                        <text x="150" y="115" textAnchor="middle" fill="#78dfa7" fontSize="10" fontWeight="bold">ТКАНЬ ПЕРЧАТКИ</text>
                       </g>
                     )}
 
@@ -1227,7 +1243,7 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                     <g transform="translate(30, 110)">
                       <path
                         d={`M 0 30 Q 10 ${30 - springTension / 5} 20 30 Q 30 ${30 + springTension / 5} 40 30`}
-                        stroke={springTension >= 70 && springTension <= 80 ? "#00ff88" : "#eab308"}
+                        stroke={springTension >= 70 && springTension <= 80 ? "#78dfa7" : "#eab308"}
                         strokeWidth="5"
                         fill="none"
                       />
@@ -1236,66 +1252,33 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                   </svg>
                 </div>
 
-                <span className="text-[10px] text-gray-500 font-mono mt-1">
+                <span className="text-sm text-gray-500 font-interface mt-1">
                   {isTrapOpen ? 'Зубья раскрыты. Зажатые волокна ткани освобождены.' : 'Механизм под натяжением. Удерживайте натяжение в безопасной зоне.'}
                 </span>
               </div>
 
               {/* Dials & Tension Slider Controls */}
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Dial 1 */}
-                  <div className="p-3 bg-[#0c1120] border border-[#1b2645] rounded-xl text-center space-y-2">
-                    <span className="text-[10px] text-gray-400 block font-bold">СЕКТОР МУСОРОСЖИГАТЕЛЯ</span>
-                    <div className="text-xl font-cyber font-bold text-[#00f3ff]">0{dialSector}</div>
-                    <div className="flex justify-center gap-1.5">
-                      <button onClick={() => { SoundFX.playClick(); setDialSector(s => Math.max(1, s - 1)); }} className="px-2.5 py-1 bg-[#16213a] text-white rounded text-xs hover:bg-[#202e4f]">-</button>
-                      <button onClick={() => { SoundFX.playClick(); setDialSector(s => Math.min(8, s + 1)); }} className="px-2.5 py-1 bg-[#16213a] text-white rounded text-xs hover:bg-[#202e4f]">+</button>
-                    </div>
-                  </div>
-
-                  {/* Dial 2 */}
-                  <div className="p-3 bg-[#0c1120] border border-[#1b2645] rounded-xl text-center space-y-2">
-                    <span className="text-[10px] text-gray-400 block font-bold">ВРЕМЯ ДИАЛОГА (СЕК)</span>
-                    <div className="text-xl font-cyber font-bold text-amber-400">{dialSeconds} с</div>
-                    <div className="flex justify-center gap-1.5">
-                      <button onClick={() => { SoundFX.playClick(); setDialSeconds(t => Math.max(5, t - 5)); }} className="px-2.5 py-1 bg-[#16213a] text-white rounded text-xs hover:bg-[#202e4f]">-</button>
-                      <button onClick={() => { SoundFX.playClick(); setDialSeconds(t => Math.min(60, t + 5)); }} className="px-2.5 py-1 bg-[#16213a] text-white rounded text-xs hover:bg-[#202e4f]">+</button>
-                    </div>
-                  </div>
-
-                  {/* Dial 3 */}
-                  <div className="p-3 bg-[#0c1120] border border-[#1b2645] rounded-xl text-center space-y-2">
-                    <span className="text-[10px] text-gray-400 block font-bold">МОДЕЛЬ WOLF TRAP</span>
-                    <div className="text-xl font-cyber font-bold text-[#ff2a85]">#{dialWolf}</div>
-                    <div className="flex justify-center gap-1.5">
-                      <button onClick={() => { SoundFX.playClick(); setDialWolf(m => Math.max(1, m - 1)); }} className="px-2.5 py-1 bg-[#16213a] text-white rounded text-xs hover:bg-[#202e4f]">-</button>
-                      <button onClick={() => { SoundFX.playClick(); setDialWolf(m => Math.min(6, m + 1)); }} className="px-2.5 py-1 bg-[#16213a] text-white rounded text-xs hover:bg-[#202e4f]">+</button>
-                    </div>
-                  </div>
+                <div className="trap-dials grid grid-cols-1 gap-3">
+                  <RangeControl showSlider={false} label="Сектор мусоросжигателя" value={dialSector} min={1} max={8} onChange={setDialSector} />
+                  <RangeControl showSlider={false} label="Время диалога" value={dialSeconds} min={5} max={60} step={5} unit="с" onChange={setDialSeconds} />
+                  <RangeControl showSlider={false} label="Модель Wolf Trap" value={dialWolf} min={1} max={6} onChange={setDialWolf} />
                 </div>
 
                 {/* Spring Tension Gauge Slider */}
                 <div className="p-4 bg-[#070a13] border border-[#1d2745] rounded-xl space-y-2">
-                  <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-300 font-bold">НАТЯЖЕНИЕ РЫЧАГА ПРУЖИНЫ:</span>
-                    <span className={`font-cyber font-bold ${
-                      springTension >= 70 && springTension <= 80 ? 'text-[#00ff88]' : 'text-amber-400'
+                    <span className={`font-interface font-bold ${
+                      springTension >= 70 && springTension <= 80 ? 'text-[#78dfa7]' : 'text-amber-400'
                     }`}>
                       {springTension}% {springTension >= 70 && springTension <= 80 ? '(ОПТИМУМ)' : '(КРИТИЧНО)'}
                     </span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={springTension}
-                    onChange={(e) => setSpringTension(Number(e.target.value))}
-                    className="w-full accent-[#00ff88] cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-gray-500">
+                  <RangeControl label="Натяжение пружины" value={springTension} min={0} max={100} step={1} unit="%" onChange={setSpringTension} />
+                  <div className="flex justify-between text-sm text-gray-500">
                     <span>0% Срыв</span>
-                    <span className="text-[#00ff88] font-bold">70% – 80% (Зона деактивации)</span>
+                    <span className="text-[#78dfa7] font-bold">70% – 80% (Зона деактивации)</span>
                     <span>100% Перетяжка</span>
                   </div>
                 </div>
@@ -1303,15 +1286,15 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
                 <div className="space-y-2 pt-1">
                   <button
                     onClick={handleTriggerTrap}
-                    className="w-full dr-btn dr-btn-primary py-2.5 px-6 text-xs font-cyber font-bold"
+                    className="w-full dr-btn dr-btn-primary py-2.5 px-6 text-sm font-interface font-bold"
                   >
                     РАЗЖАТЬ ПРУЖИННЫЙ ЗАМОК
                   </button>
 
                   {trapMessage && (
-                    <div className={`p-2.5 rounded text-xs font-mono border animate-fade-in ${
-                      trapMessage.startsWith('ЩЕЛЧОК') ? 'bg-[#00ff88]/15 border-[#00ff88] text-[#00ff88]' : 'bg-[#ff2a85]/15 border-[#ff2a85] text-[#ff2a85]'
-                    }`}>
+                    <div className={`p-2.5 rounded text-sm font-interface border animate-fade-in ${
+                      trapMessage.startsWith('ЩЕЛЧОК') ? 'bg-[#78dfa7]/15 border-[#78dfa7] text-[#78dfa7]' : 'bg-[#ff2a85]/15 border-[#ff2a85] text-[#ff2a85]'
+                    }`} role="status" aria-live="polite">
                       {trapMessage}
                     </div>
                   )}
@@ -1328,17 +1311,17 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between border-b border-[#1b2540] pb-3 gap-2">
               <div>
-                <span className="text-[11px] text-purple-400 font-bold uppercase">ВЕЩДОК: ВЕРСТАК И СТЯЖКИ</span>
-                <h3 className="text-lg font-cyber font-bold text-white">
-                  СРАВНИТЕЛЬНЫЙ МИКРОСКОП: СОПОСТАВЛЕНИЕ РЕЛЬЕФА СРЕЗА
+                <span className="text-sm text-purple-400 font-bold uppercase">ВЕЩДОК: ВЕРСТАК И СТЯЖКИ</span>
+                <h3 className="text-lg font-interface font-bold text-white">
+                  Сравнительный микроскоп: сопоставление рельефа среза
                 </h3>
               </div>
-              <span className="text-xs bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded border border-purple-500/40 font-bold">
-                НАГРАДА: БУКВЫ #5 И #6 [ М & И ]
+              <span className="text-sm bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded border border-purple-500/40 font-bold">
+                Заключение анализа
               </span>
             </div>
 
-            <p className="text-xs text-gray-300 leading-relaxed">
+            <p className="text-sm text-gray-300 leading-relaxed">
               На запястьях жертвы найдены срезанные строительные стяжки. Выберите инструмент из мастерской, сопоставьте угол среза (45°) и уровень резкости под микроскопом, чтобы добиться 95%+ совпадения микрорельефа кромки.
             </p>
 
@@ -1346,150 +1329,113 @@ export default function ForensicLab({ onNavigateToReconstruction }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Left Screen: Evidence Sample */}
               <div className="p-4 bg-[#05070e] border border-[#1b2645] rounded-xl space-y-2">
-                <span className="text-[11px] text-[#00f3ff] font-bold block">ЭТАЛОН: СРЕЗ СТЯЖКИ С ЗАПЯСТЬЯ (x100)</span>
+                <span className="text-sm text-[#6ddce5] font-bold block">ЭТАЛОН: СРЕЗ СТЯЖКИ С ЗАПЯСТЬЯ (x100)</span>
                 <div className="h-44 bg-[#080d1a] border border-[#203058] rounded-lg relative flex items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#00f3ff_1px,transparent_1px)] [background-size:16px_16px]" />
-                  
-                  {/* Visual cut shape at 45 deg with striation lines */}
-                  <div className="relative w-28 h-28 flex items-center justify-center rotate-45 border-r-4 border-t-4 border-white opacity-85">
-                    <div className="absolute inset-2 border-r border-t border-cyan-400/50" />
-                    <div className="absolute inset-4 border-r border-t border-cyan-400/30" />
-                  </div>
+                  <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#6ddce5_1px,transparent_1px)] [background-size:16px_16px]" />
 
-                  <div className="absolute bottom-2 left-2 text-[10px] text-gray-500 font-mono">УГОЛ ФИКСАЦИИ: 45° // РОВНЫЙ СКОС</div>
+                  <MicroscopeSample />
                 </div>
+                <p className="sample-caption text-sm text-gray-400">Угол фиксации: 45°. Ровный скос.</p>
               </div>
 
               {/* Right Screen: Candidate Tool Specimen */}
               <div className="p-4 bg-[#05070e] border border-[#1b2645] rounded-xl space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-purple-400 font-bold">ТЕСТОВЫЙ ОБРАЗЕЦ ИНСТРУМЕНТА</span>
-                  <span className={`font-cyber font-bold ${matchScore >= 95 ? 'text-[#00ff88]' : 'text-amber-400'}`}>
-                    СОВПАДЕНИЕ: {matchScore}%
+                <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                  <span className="text-gray-400 font-bold">Образец инструмента</span>
+                  <span className={`font-interface font-bold ${matchScore >= 95 ? 'text-[#78dfa7]' : 'text-amber-400'}`}>
+                    Совпадение: {matchScore}%
                   </span>
                 </div>
 
                 <div className="h-44 bg-[#080d1a] border border-[#203058] rounded-lg relative flex items-center justify-center overflow-hidden">
                   <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#c084fc_1px,transparent_1px)] [background-size:16px_16px]" />
-                  
-                  {/* Dynamic candidate cut shape reflecting angle & tool & magnification */}
-                  {selectedTool ? (
-                    <div
-                      className={`w-28 h-28 transition-all duration-150 flex items-center justify-center ${
-                        selectedTool === 'pliers'
-                          ? 'border-r-4 border-t-4 border-[#00ff88]'
-                          : selectedTool === 'hacksaw'
-                          ? 'border-r-4 border-dashed border-red-400'
-                          : 'border-b-4 border-white'
-                      }`}
-                      style={{
-                        transform: `rotate(${cutAngle}deg) scale(${magnification / 75})`,
-                        opacity: magnification / 100,
-                        filter: `blur(${Math.max(0, 5 - magnification / 18)}px)`
-                      }}
-                    >
-                      {selectedTool === 'pliers' && (
-                        <div className="w-16 h-16 border-r border-t border-emerald-400/60" />
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-xs text-gray-500 font-mono">Выберите инструмент ниже</span>
-                  )}
 
-                  <div className="absolute bottom-2 left-2 text-[10px] text-gray-500 font-mono">
-                    УГОЛ: {cutAngle}° // МАСШТАБ: {magnification}%
-                  </div>
+                  {overlayBlend > 0 && <div className="absolute inset-0 flex items-center justify-center"><MicroscopeSample color="#e8edf5" opacity={overlayBlend / 100} /></div>}
+                  {selectedTool ? <MicroscopeSample tool={selectedTool} angle={cutAngle} focus={microscopeFocus} zoom={magnification} color="#6ddce5" /> : <span className="text-sm text-gray-400">Выберите инструмент ниже</span>}
+
                 </div>
+                <p className="sample-caption text-sm text-gray-400">Угол: {cutAngle}°. Масштаб: {magnification}%. Фокус: {microscopeFocus}%.</p>
               </div>
             </div>
 
             {/* Tool Selection Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               <button
-                onClick={() => { SoundFX.playClick(); setSelectedTool('hacksaw'); }}
-                className={`p-3.5 rounded-xl border text-left text-xs transition-all ${
-                  selectedTool === 'hacksaw' ? 'bg-[#181122] border-purple-500 text-white shadow' : 'bg-[#0d101c] border-[#1c233a] text-gray-400 hover:border-gray-500'
+                onClick={() => { SoundFX.playRotate(); setSelectedTool('hacksaw'); setMicroscopeMessage(''); }}
+                className={`p-3.5 rounded-xl border text-left text-sm transition-all ${
+                  selectedTool === 'hacksaw' ? 'bg-[#151f38] border-[#6ddce5] text-white' : 'bg-[#0d101c] border-[#1c233a] text-gray-400 hover:border-gray-500'
                 }`}
               >
                 <div className="font-bold flex items-center gap-1.5 mb-1">
                   <span>🪚</span>
                   <span>1. Слесарная ножовка</span>
                 </div>
-                <div className="text-[10px] text-gray-500">Зубчатый рваный рез 90°</div>
+                <div className="text-sm text-gray-500">Зубчатый рваный рез 90°</div>
               </button>
 
               <button
-                onClick={() => { SoundFX.playClick(); setSelectedTool('pliers'); }}
-                className={`p-3.5 rounded-xl border text-left text-xs transition-all ${
-                  selectedTool === 'pliers' ? 'bg-[#181122] border-[#00ff88] text-white shadow-[0_0_12px_rgba(0,255,136,0.2)]' : 'bg-[#0d101c] border-[#1c233a] text-gray-400 hover:border-gray-500'
+                onClick={() => { SoundFX.playRotate(); setSelectedTool('pliers'); setMicroscopeMessage(''); }}
+                className={`p-3.5 rounded-xl border text-left text-sm transition-all ${
+                  selectedTool === 'pliers' ? 'bg-[#151f38] border-[#6ddce5] text-white' : 'bg-[#0d101c] border-[#1c233a] text-gray-400 hover:border-gray-500'
                 }`}
               >
-                <div className="font-bold text-[#00ff88] flex items-center gap-1.5 mb-1">
+                <div className="font-bold flex items-center gap-1.5 mb-1">
                   <Scissors size={14} />
                   <span>2. Монтажные кусачки</span>
                 </div>
-                <div className="text-[10px] text-gray-500">Диагональные лезвия 45°</div>
+                <div className="text-sm text-gray-500">Диагональные лезвия 45°</div>
               </button>
 
               <button
-                onClick={() => { SoundFX.playClick(); setSelectedTool('knife'); }}
-                className={`p-3.5 rounded-xl border text-left text-xs transition-all ${
-                  selectedTool === 'knife' ? 'bg-[#181122] border-purple-500 text-white shadow' : 'bg-[#0d101c] border-[#1c233a] text-gray-400 hover:border-gray-500'
+                onClick={() => { SoundFX.playRotate(); setSelectedTool('knife'); setMicroscopeMessage(''); }}
+                className={`p-3.5 rounded-xl border text-left text-sm transition-all ${
+                  selectedTool === 'knife' ? 'bg-[#151f38] border-[#6ddce5] text-white' : 'bg-[#0d101c] border-[#1c233a] text-gray-400 hover:border-gray-500'
                 }`}
               >
                 <div className="font-bold flex items-center gap-1.5 mb-1">
                   <span>🔪</span>
                   <span>3. Канцелярский нож</span>
                 </div>
-                <div className="text-[10px] text-gray-500">Тонкий плоский скол</div>
+                <div className="text-sm text-gray-500">Тонкий плоский скол</div>
               </button>
             </div>
 
+            <p className="text-sm text-gray-400">Учебная визуализация: сравните расположение борозд. Фокус меняет чёткость, а увеличение — размер изображения.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <RangeControl label="Фокус микроскопа" value={microscopeFocus} min={20} max={100} unit="%" onChange={setMicroscopeFocus} />
+              <RangeControl label="Наложение эталона" value={overlayBlend} min={0} max={100} unit="%" onChange={setOverlayBlend} />
+            </div>
             {/* Sliders for Angle and Zoom */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#060810] p-4 rounded-xl border border-[#1b2540]">
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-gray-300 font-mono">
+                <div className="flex justify-between text-sm text-gray-300 font-interface">
                   <span>УГОЛ НАКЛОНА ЛЕЗВИЯ:</span>
-                  <span className="font-bold text-[#00f3ff]">{cutAngle}°</span>
+                  <span className="font-bold text-[#6ddce5]">{cutAngle}°</span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="90"
-                  value={cutAngle}
-                  onChange={(e) => setCutAngle(Number(e.target.value))}
-                  className="w-full accent-[#00f3ff] cursor-pointer"
-                />
+                <RangeControl label="Угол среза" value={cutAngle} min={0} max={90} step={1} unit="°" onChange={(next) => { setCutAngle(next); setMicroscopeMessage(''); }} />
               </div>
 
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-gray-300 font-mono">
-                  <span>ФОКУС И УВЕЛИЧЕНИЕ МИКРОСКОПА:</span>
-                  <span className="font-bold text-[#00f3ff]">{magnification}%</span>
+                <div className="flex justify-between text-sm text-gray-300 font-interface">
+                  <span>МАСШТАБ ОБРАЗЦА:</span>
+                  <span className="font-bold text-[#6ddce5]">{magnification}%</span>
                 </div>
-                <input
-                  type="range"
-                  min="20"
-                  max="100"
-                  value={magnification}
-                  onChange={(e) => setMagnification(Number(e.target.value))}
-                  className="w-full accent-[#00f3ff] cursor-pointer"
-                />
+                <RangeControl label="Увеличение" value={magnification} min={20} max={100} step={1} unit="%" onChange={(next) => { setMagnification(next); setMicroscopeMessage(''); }} />
               </div>
             </div>
 
             <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
               <button
                 onClick={handleConfirmMicroscope}
-                className="dr-btn dr-btn-primary py-2.5 px-6 text-xs font-cyber font-bold"
+                className="dr-btn dr-btn-primary py-2.5 px-6 text-sm font-interface font-bold"
               >
                 ФИКСИРОВАТЬ ЭКСПЕРТИЗУ ВЕРСТАКА
               </button>
 
               {microscopeMessage && (
-                <div className={`p-2.5 rounded text-xs font-mono border animate-fade-in ${
-                  microscopeMessage.startsWith('100%') ? 'bg-[#00ff88]/15 border-[#00ff88] text-[#00ff88]' : 'bg-[#ff2a85]/15 border-[#ff2a85] text-[#ff2a85]'
-                }`}>
+                <div className={`p-2.5 rounded text-sm font-interface border animate-fade-in ${
+                  microscopeMessage.startsWith('100%') ? 'bg-[#78dfa7]/15 border-[#78dfa7] text-[#78dfa7]' : 'bg-[#ff2a85]/15 border-[#ff2a85] text-[#ff2a85]'
+                }`} role="status" aria-live="polite">
                   {microscopeMessage}
                 </div>
               )}

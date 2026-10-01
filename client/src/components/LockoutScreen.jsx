@@ -83,7 +83,7 @@ export default function LockoutScreen({ remainingSeconds: initialSeconds, locked
 
           <div className="p-3 bg-[#110d18] border border-[#2b172a] rounded space-y-1">
             <span className="text-gray-500 block">ЗАБЛОКИРОВАННЫЙ ТЕРМИНАЛ (IP):</span>
-            <span className="text-[#00f3ff] font-bold">{clientIp || '127.0.0.1'}</span>
+            <span className="text-[#6ddce5] font-bold">{clientIp || '127.0.0.1'}</span>
           </div>
         </div>
 
@@ -99,7 +99,7 @@ export default function LockoutScreen({ remainingSeconds: initialSeconds, locked
         </div>
 
         {/* Nagito Atmosphere Quote */}
-        <div className="p-3 bg-[#0a0f18] border-l-2 border-[#00ff88] text-xs text-gray-400 font-mono italic text-left">
+        <div className="p-3 bg-[#0a0f18] border-l-2 border-[#78dfa7] text-xs text-gray-400 font-mono italic text-left">
           «Оя-оя... Какая нетерпеливость! Отчаяние заставило тебя назвать имя наугад? Теперь твой Монопад заморожен на 10 минут, пока остальные 15 учеников ведут поиски в коридорах. Но не унывай: даже в этой изоляции ты можешь сопоставить крупицы истины в своей голове...» — Нагито Комаэда
         </div>
 
