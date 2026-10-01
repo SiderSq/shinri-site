@@ -39,14 +39,14 @@ export default function VictoryScreen({
           angle: 60,
           spread: 55,
           origin: { x: 0 },
-          colors: ['#ff2a85', '#00f3ff', '#00ff88', '#ffffff']
+          colors: ['#ff2a85', '#6ddce5', '#78dfa7', '#ffffff']
         });
         confetti({
           particleCount: 4,
           angle: 120,
           spread: 55,
           origin: { x: 1 },
-          colors: ['#ff2a85', '#00f3ff', '#00ff88', '#ffffff']
+          colors: ['#ff2a85', '#6ddce5', '#78dfa7', '#ffffff']
         });
 
         if (Date.now() < end) {
@@ -194,10 +194,10 @@ export default function VictoryScreen({
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl cyber-panel p-6 sm:p-10 bg-[#090d16] border-2 border-[#00ff88] box-glow-cyan text-center space-y-6 relative overflow-hidden">
+      <div className="w-full max-w-3xl cyber-panel p-6 sm:p-10 bg-[#090d16] border-2 border-[#78dfa7] box-glow-cyan text-center space-y-6 relative overflow-hidden">
         
         {/* Background Decorative Reticle */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full border border-[#00ff88]/10 pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full border border-[#78dfa7]/10 pointer-events-none" />
 
         {/* Dramatic BREAK! Announcement */}
         <div className="inline-block px-4 py-1 bg-[#ff2a85] text-white font-cyber font-black tracking-widest text-lg sm:text-2xl transform -rotate-1 shadow-[0_0_20px_rgba(255,42,133,0.8)] animate-pulse">
@@ -205,7 +205,7 @@ export default function VictoryScreen({
         </div>
 
         <div>
-          <span className="text-xs font-mono text-[#00ff88] uppercase tracking-widest block mb-2">
+          <span className="text-xs font-mono text-[#78dfa7] uppercase tracking-widest block mb-2">
             ВЕРИФИКАЦИЯ МАТЕРИАЛОВ ЗАВЕРШЕНА // CASE CLOSED
           </span>
           <h1 className="text-3xl sm:text-5xl font-cyber font-extrabold text-white tracking-wider glow-hope">
@@ -214,25 +214,25 @@ export default function VictoryScreen({
         </div>
 
         {/* Established Identity Card */}
-        <div className="p-6 bg-[#0f172a] border-2 border-[#00ff88] rounded space-y-3">
+        <div className="p-6 bg-[#0f172a] border-2 border-[#78dfa7] rounded space-y-3">
           <div className="text-xs font-mono text-gray-400">
             УСТАНОВЛЕННАЯ ЛИЧНОСТЬ НАСТОЯЩЕГО УБИЙЦЫ:
           </div>
 
-          <div className="text-4xl sm:text-6xl font-cyber font-black tracking-widest text-[#00ff88] glow-hope select-all">
+          <div className="text-4xl sm:text-6xl font-cyber font-black tracking-widest text-[#78dfa7] glow-hope select-all">
             {killer || 'ЗАЧЕРНЁННЫЙ'}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-gray-400 pt-3 border-t border-[#1e2a4a]">
             <span>ВРЕМЯ ФИКСАЦИИ: <strong className="text-white">{solvedAt ? new Date(solvedAt).toLocaleTimeString() : '22:47:13'}</strong></span>
-            <span>СТАТУС В БАЗЕ: <strong className="text-[#00ff88]">SOLVED & ARCHIVED</strong></span>
+            <span>СТАТУС В БАЗЕ: <strong className="text-[#78dfa7]">SOLVED & ARCHIVED</strong></span>
           </div>
         </div>
 
         {/* If certificate is not yet generated because name hasn't been input */}
         {!certificate && !loading && (
-          <div className="p-6 bg-[#0a0f1d] border-2 border-[#00f3ff] rounded-lg text-left space-y-4 shadow-[0_0_30px_rgba(0,243,255,0.2)]">
-            <div className="flex items-center gap-2.5 text-[#00f3ff] font-cyber font-bold text-base border-b border-[#1b2640] pb-3">
+          <div className="p-6 bg-[#0a0f1d] border-2 border-[#6ddce5] rounded-lg text-left space-y-4 shadow-[0_0_30px_rgba(109,220,229,0.2)]">
+            <div className="flex items-center gap-2.5 text-[#6ddce5] font-cyber font-bold text-base border-b border-[#1b2640] pb-3">
               <KeyRound size={20} className="text-[#ff2a85]" />
               <span>РЕГИСТРАЦИЯ ИМЕНИ ДЕТЕКТИВА // ВЫДАЧА СЕРТИФИКАТА ВЕРДИКТА</span>
             </div>
@@ -258,7 +258,7 @@ export default function VictoryScreen({
                     }
                   }}
                   placeholder="Введите свое имя"
-                  className="flex-1 bg-[#060a12] border-2 border-[#00f3ff]/60 focus:border-[#00ff88] text-white px-3.5 py-2.5 rounded font-mono text-sm leading-normal outline-none transition-colors shadow-inner"
+                  className="flex-1 bg-[#060a12] border-2 border-[#6ddce5]/60 focus:border-[#78dfa7] text-white px-3.5 py-2.5 rounded font-mono text-sm leading-normal outline-none transition-colors shadow-inner"
                   autoFocus
                 />
                 <button
@@ -282,22 +282,22 @@ export default function VictoryScreen({
 
         {/* Loading Spinner */}
         {loading && (
-          <div className="p-8 bg-[#0a0f1d] border-2 border-[#00f3ff]/50 rounded-lg text-center space-y-3">
-            <RefreshCw size={24} className="animate-spin text-[#00f3ff] mx-auto" />
-            <div className="font-cyber text-sm text-[#00f3ff]">ГЕНЕРАЦИЯ КРИПТОГРАФИЧЕСКОГО СЕРТИФИКАТА...</div>
+          <div className="p-8 bg-[#0a0f1d] border-2 border-[#6ddce5]/50 rounded-lg text-center space-y-3">
+            <RefreshCw size={24} className="animate-spin text-[#6ddce5] mx-auto" />
+            <div className="font-cyber text-sm text-[#6ddce5]">ГЕНЕРАЦИЯ КРИПТОГРАФИЧЕСКОГО СЕРТИФИКАТА...</div>
             <div className="text-xs font-mono text-gray-400">Формирование цифровой подписи HMAC-SHA256 для ученика {playerTag}...</div>
           </div>
         )}
 
         {/* Cryptographic Verdict Generator Section */}
         {certificate && (
-          <div className="p-6 bg-[#0a0f1d] border-2 border-[#00f3ff]/40 rounded-lg text-left space-y-4 relative shadow-[0_0_25px_rgba(0,243,255,0.15)]">
+          <div className="p-6 bg-[#0a0f1d] border-2 border-[#6ddce5]/40 rounded-lg text-left space-y-4 relative shadow-[0_0_25px_rgba(109,220,229,0.15)]">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1b2640] pb-3">
-              <div className="flex items-center gap-2 text-[#00f3ff] font-cyber font-bold text-sm">
+              <div className="flex items-center gap-2 text-[#6ddce5] font-cyber font-bold text-sm">
                 <KeyRound size={18} />
                 <span>КРИПТОГРАФИЧЕСКИЙ ВЕРДИКТ СУДА // HMAC-SHA256 CERTIFICATE</span>
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded bg-[#00f3ff]/10 text-[#00f3ff] border border-[#00f3ff]/30">
+              <div className="flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded bg-[#6ddce5]/10 text-[#6ddce5] border border-[#6ddce5]/30">
                 <ShieldCheck size={12} />
                 <span>TAMPER-EVIDENT SEAL</span>
               </div>
@@ -307,7 +307,7 @@ export default function VictoryScreen({
             <div className="p-3 bg-[#0d1527] border border-[#1e2f52] rounded flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 font-mono text-xs">
                 <span className="text-gray-400">ВЫДАН УЧЕНИКУ-ДЕТЕКТИВУ:</span>
-                <span className="text-sm sm:text-base font-cyber font-black text-[#00ff88] tracking-wider px-2 py-0.5 bg-[#00ff88]/10 rounded border border-[#00ff88]/30">
+                <span className="text-sm sm:text-base font-cyber font-black text-[#78dfa7] tracking-wider px-2 py-0.5 bg-[#78dfa7]/10 rounded border border-[#78dfa7]/30">
                   {certificate.playerTag || playerTag}
                 </span>
               </div>
@@ -324,7 +324,7 @@ export default function VictoryScreen({
 
             {/* Inline Name Editor if student wants to change name */}
             {isEditingTag && (
-              <div className="p-3 bg-[#080d1a] border border-[#00f3ff]/40 rounded space-y-2 animate-in fade-in duration-200">
+              <div className="p-3 bg-[#080d1a] border border-[#6ddce5]/40 rounded space-y-2 animate-in fade-in duration-200">
                 <label className="text-[11px] font-mono text-gray-400 block">
                   ВВЕДИТЕ НОВОЕ ИМЯ УЧЕНИКА ДЛЯ ПЕРЕВЫПУСКА СЕРТИФИКАТА:
                 </label>
@@ -340,7 +340,7 @@ export default function VictoryScreen({
                       }
                     }}
                     placeholder="Введите свое имя"
-                    className="flex-1 bg-[#060a12] border border-[#2a3860] focus:border-[#00f3ff] text-white px-3.5 py-2 rounded font-mono text-xs leading-normal outline-none transition-colors"
+                    className="flex-1 bg-[#060a12] border border-[#2a3860] focus:border-[#6ddce5] text-white px-3.5 py-2 rounded font-mono text-xs leading-normal outline-none transition-colors"
                     autoFocus
                   />
                   <button
@@ -365,11 +365,11 @@ export default function VictoryScreen({
             <div className="space-y-3 pt-2">
               {/* Verdict Code & HMAC Seal Badges */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="p-3 bg-[#0f1728] border border-[#00f3ff]/30 rounded">
+                <div className="p-3 bg-[#0f1728] border border-[#6ddce5]/30 rounded">
                   <div className="text-[10px] font-mono text-gray-400 mb-1">
                     ШИФР-КОД ВЕРДИКТА (VERDICT CODE):
                   </div>
-                  <div className="font-cyber font-bold text-sm text-[#00f3ff] tracking-wider select-all">
+                  <div className="font-cyber font-bold text-sm text-[#6ddce5] tracking-wider select-all">
                     {certificate.verdictCode}
                   </div>
                 </div>
@@ -387,13 +387,13 @@ export default function VictoryScreen({
               {/* Online Verification Status Badge */}
               <div className={`p-2.5 rounded border text-xs font-mono flex items-center gap-2 transition-all ${
                 verifyStatus.verified === true
-                  ? 'bg-[#00ff88]/10 border-[#00ff88]/50 text-[#00ff88]'
+                  ? 'bg-[#78dfa7]/10 border-[#78dfa7]/50 text-[#78dfa7]'
                   : verifyStatus.verified === false
                   ? 'bg-red-950/40 border-red-500/50 text-red-400'
                   : 'bg-yellow-950/30 border-yellow-500/40 text-yellow-300'
               }`}>
                 {verifyStatus.verified === true ? (
-                  <CheckCircle size={15} className="shrink-0 text-[#00ff88]" />
+                  <CheckCircle size={15} className="shrink-0 text-[#78dfa7]" />
                 ) : verifyStatus.verified === false ? (
                   <Shield size={15} className="shrink-0 text-red-400" />
                 ) : (
@@ -408,7 +408,7 @@ export default function VictoryScreen({
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center justify-between text-[11px] font-mono text-gray-400">
                   <div className="flex items-center gap-1.5">
-                    <Terminal size={13} className="text-[#00f3ff]" />
+                    <Terminal size={13} className="text-[#6ddce5]" />
                     <span>ГОТОВЫЙ ОТЧЕТ ДЛЯ ЧАТА SHINRI TRIAL RP (DISCORD MARKDOWN / ANSI):</span>
                   </div>
                   <span className="text-[10px] text-gray-500">READY TO PASTE</span>
@@ -425,8 +425,8 @@ export default function VictoryScreen({
                   onClick={handleCopyDiscordReport}
                   className={`w-full py-3 px-4 rounded font-cyber font-bold text-xs tracking-wider flex items-center justify-center gap-2 transition-all duration-200 ${
                     copied
-                      ? 'bg-[#00ff88] text-black shadow-[0_0_20px_rgba(0,255,136,0.6)]'
-                      : 'dr-btn dr-btn-cyan shadow-[0_0_15px_rgba(0,243,255,0.3)]'
+                      ? 'bg-[#78dfa7] text-black shadow-[0_0_20px_rgba(120,223,167,0.6)]'
+                      : 'dr-btn dr-btn-cyan shadow-[0_0_15px_rgba(109,220,229,0.3)]'
                   }`}
                 >
                   {copied ? (
@@ -447,8 +447,8 @@ export default function VictoryScreen({
         )}
 
         {/* Nagito Komaeda Final Monologue */}
-        <div className="p-5 bg-[#10192e] border-l-4 border-[#00ff88] text-left space-y-2">
-          <div className="flex items-center gap-2 text-[#00ff88] font-cyber font-bold text-xs">
+        <div className="p-5 bg-[#10192e] border-l-4 border-[#78dfa7] text-left space-y-2">
+          <div className="flex items-center gap-2 text-[#78dfa7] font-cyber font-bold text-xs">
             <Sparkles size={16} />
             <span>ВЕРДИКТ КУРАТОРА: НАГИТО КОМАЭДА</span>
           </div>

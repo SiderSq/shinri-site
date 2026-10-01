@@ -57,7 +57,9 @@ export default function App() {
 
   // Settings
   const [soundOn, setSoundOn] = useState(SoundFX.isEnabled());
-  const [crtOn, setCrtOn] = useState(true);
+  const [crtOn, setCrtOn] = useState(() => {
+    try { return localStorage.getItem('shinri_crt_enabled') !== 'false'; } catch { return true; }
+  });
   
   // Admin panel is hidden from public view. Opened only by direct /admin, #admin, or secret hotkey Ctrl+Shift+A
   const [isAdminOpen, setIsAdminOpen] = useState(
@@ -175,7 +177,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07080d] text-gray-200 flex flex-col font-mono relative selection:bg-[#ff2a85] selection:text-white">
+    <div className="shinri-shell min-h-screen bg-[#07080d] text-gray-200 flex flex-col relative selection:bg-[#ff2a85] selection:text-white">
+      <a className="skip-link" href="#main-content">Перейти к содержимому</a>
       {/* CRT Scanline and Vignette Effects */}
       <CrtOverlay enabled={crtOn} />
 
@@ -192,13 +195,13 @@ export default function App() {
       />
 
       {/* Main Interactive View Router */}
-      <main className="flex-1 flex flex-col relative z-10">
+      <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col relative z-10">
         
         {/* Loading State */}
         {appState === 'LOADING' && (
           <div className="flex-1 flex items-center justify-center">
-            <div className="p-4 font-mono text-sm text-[#00f3ff] animate-pulse flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#00f3ff] animate-ping" />
+            <div className="p-4 font-mono text-sm text-[#6ddce5] animate-pulse flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#6ddce5] animate-ping" />
               <span>ПОДКЛЮЧЕНИЕ К АРХИВУ ТЕРМИНАЛА...</span>
             </div>
           </div>
@@ -256,7 +259,7 @@ export default function App() {
             />
 
             {/* Active Section Content Pane */}
-            <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-6xl mx-auto w-full">
+            <div className="content-pane min-w-0 flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-6xl mx-auto w-full">
               {activeTab === 'overview' && (
                 <CaseOverview
                   data={caseData}
@@ -307,7 +310,7 @@ export default function App() {
           <span className="text-gray-400">
             «Ради абсолютной надежды...» — Нагито Комаэда
           </span>
-          <span className="text-[#00f3ff]">NODE 04-271 ACTIVE</span>
+          <span className="text-[#6ddce5]">NODE 04-271 ACTIVE</span>
         </div>
       </footer>
     </div>
