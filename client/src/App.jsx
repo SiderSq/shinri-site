@@ -1,3 +1,15 @@
+import {
+  Fingerprint,
+  FolderSearch,
+  FlaskConical,
+  Scale,
+  CircuitBoard,
+  GitBranch,
+  ScanLine,
+  FileText,
+  Crosshair,
+  Radio,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import RoundEditor from "./components/admin/RoundEditor";
@@ -24,6 +36,56 @@ const labs = [
   ["timeline", "02", "Причина → следствие"],
   ["traces", "03", "Три независимых следа"],
 ];
+function ArchiveSignal() {
+  return (
+    <div className="archive-signal" aria-hidden="true">
+      <div className="signal-topline">
+        <Radio size={16} /> NODE 04–271 <span>ARCHIVE LINK</span>
+      </div>
+      <svg viewBox="0 0 360 150" fill="none" className="signal-diagram">
+        <defs>
+          <pattern
+            id="signal-grid"
+            width="20"
+            height="20"
+            patternUnits="userSpaceOnUse"
+          >
+            <path d="M20 0H0V20" stroke="currentColor" strokeOpacity=".14" />
+          </pattern>
+        </defs>
+        <path fill="url(#signal-grid)" d="M0 0H360V150H0Z" />
+        <path
+          d="M20 75H100L140 35H215L250 75H340M100 75L140 115H215L250 75"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <circle cx="100" cy="75" r="18" stroke="currentColor" />
+        <circle cx="100" cy="75" r="6" fill="currentColor" />
+        <path d="M166 51H194V99H166Z" stroke="currentColor" />
+        <path d="M173 62H187M173 72H187M173 82H183" stroke="currentColor" />
+        <circle cx="250" cy="75" r="18" stroke="currentColor" />
+        <path d="M242 75L248 81L260 68" stroke="currentColor" strokeWidth="2" />
+        <path
+          d="M10 15V5H40M350 15V5H320M10 135V145H40M350 135V145H320"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+      </svg>
+      <div className="signal-bottomline">
+        <span>ИСТОЧНИК</span>
+        <span>УЛИКА</span>
+        <span>ВЕРДИКТ</span>
+      </div>
+    </div>
+  );
+}
+const sectionIcons = { case: FolderSearch, lab: FlaskConical, verdict: Scale };
+const labIcons = {
+  circuit: CircuitBoard,
+  timeline: GitBranch,
+  traces: ScanLine,
+};
+
 export default function App() {
   const [gateway, setGateway] = useState(null),
     [record, setRecord] = useState(null);
@@ -128,7 +190,7 @@ export default function App() {
       </>
     );
   return (
-    <div className="archive">
+    <div className={`archive ${record ? "is-investigating" : "is-gateway"}`}>
       <header className="masthead">
         <a className="brand" href="/" aria-label="Shinri Trial — главная">
           <span className="brand-mark">
@@ -148,187 +210,200 @@ export default function App() {
           <span>NAGITO KOMAEDA / PRIVATE TERMINAL</span>
           <span>HOPE IS NOT A GUESS.</span>
         </div>
-        <section className="hero">
-          <div>
-            <p className="eyebrow">
-              {record
-                ? "Восстановленный архив"
-                : "Надежда требует доказательств"}
-            </p>
-            <h1>
-              {record ? (
-                <>
-                  ЦЕНА
-                  <br />
-                  <em>НАДЕЖДЫ.</em>
-                </>
-              ) : (
-                <>
-                  ДОВЕРЯЙ
-                  <br />
-                  <em>НЕ УДАЧЕ.</em>
-                </>
-              )}
-            </h1>
-            <p className="hero-copy">
-              «Моя удача может открыть дверь. Но только ваши доказательства
-              превратят отчаяние в надежду».
-            </p>
-            <span className="signature">— Нагито Комаэда / куратор архива</span>
-          </div>
-          <div className="hero-stamp" aria-hidden="true">
-            <span>TRUTH</span>
-            <strong>希望</strong>
-            <span>BEFORE HOPE</span>
-            <div className="stamp-index">04 / 271</div>
-          </div>
-        </section>
-        <ol className="route">
-          {stages.map((s, i) => (
-            <li
-              key={s}
-              className={stage === i ? "current" : stage > i ? "done" : ""}
-              aria-current={stage === i ? "step" : undefined}
-            >
-              <b>{String(i + 1).padStart(2, "0")}</b>
-              <span>{s}</span>
-              {stage > i && <span aria-label="Завершено">✓</span>}
-            </li>
-          ))}
-        </ol>
-        <div className="feedback" aria-live="polite">
-          {error && (
-            <p className="error" role="alert">
-              {error}
-            </p>
-          )}
-          {notice && <p className="notice">{notice}</p>}
-        </div>
-        {!gateway && (
-          <section className="paper">
-            <h2>Подключение к архиву</h2>
-            <p>Ожидаем ответ терминала.</p>
-            {error && (
-              <button onClick={() => act(refresh)}>Повторить соединение</button>
-            )}
-          </section>
-        )}
-        {gateway && !record && (
-          <section className="entry-grid">
-            <div className="paper intro">
+        <div className={record ? "workspace-opening" : "gateway-opening"}>
+          <section className="hero">
+            <div>
               <p className="eyebrow">
-                {stage === 0 ? "01 / Закрытый терминал" : "02 / Удалённая база"}
+                {record
+                  ? "Восстановленный архив"
+                  : "Надежда требует доказательств"}
               </p>
-              <h2>
-                {stage === 0
-                  ? "Не каждый ключ — ответ."
-                  : "Архив уничтожен. Снимок сохранился."}
-              </h2>
-              <p>
-                {stage === 0
-                  ? "Войдите с кодом ведущего. Затем получите ключ аварийного снимка в Google Drive, восстановите улики и докажите свою версию."
-                  : "Внешняя копия — единственный путь к уликам. Пароль из документа Google Drive восстанавливает доступ к делу, но не подсказывает убийцу."}
+              <h1>
+                {record ? (
+                  <>
+                    ЦЕНА
+                    <br />
+                    <em>НАДЕЖДЫ.</em>
+                  </>
+                ) : (
+                  <>
+                    ДОВЕРЯЙ
+                    <br />
+                    <em>НЕ УДАЧЕ.</em>
+                  </>
+                )}
+              </h1>
+              <p className="hero-copy">
+                «Моя удача может открыть дверь. Но только ваши доказательства
+                превратят отчаяние в надежду».
               </p>
-              <div className="margin-note">
-                <b>ПРАВИЛО РАССЛЕДОВАНИЯ</b>
+              <span className="signature">
+                — Нагито Комаэда / куратор архива
+              </span>
+            </div>
+            <div className="hero-stamp" aria-hidden="true">
+              <span>TRUTH</span>
+              <strong>希望</strong>
+              <span>BEFORE HOPE</span>
+              <div className="stamp-index">04 / 271</div>
+              <span className="stamp-orbit" />
+            </div>
+          </section>
+          <ol className="route">
+            {stages.map((s, i) => (
+              <li
+                key={s}
+                className={stage === i ? "current" : stage > i ? "done" : ""}
+                aria-current={stage === i ? "step" : undefined}
+              >
+                <b>{String(i + 1).padStart(2, "0")}</b>
+                <span>{s}</span>
+                {stage > i && <span aria-label="Завершено">✓</span>}
+              </li>
+            ))}
+          </ol>
+          <div className="feedback" aria-live="polite">
+            {error && (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            )}
+            {notice && <p className="notice">{notice}</p>}
+          </div>
+          {!gateway && (
+            <section className="paper">
+              <h2>Подключение к архиву</h2>
+              <p>Ожидаем ответ терминала.</p>
+              {error && (
+                <button onClick={() => act(refresh)}>
+                  Повторить соединение
+                </button>
+              )}
+            </section>
+          )}
+          {gateway && !record && (
+            <section className="entry-grid">
+              <div className="paper intro">
+                <p className="eyebrow">
+                  {stage === 0
+                    ? "01 / Закрытый терминал"
+                    : "02 / Удалённая база"}
+                </p>
+                <h2>
+                  {stage === 0
+                    ? "Не каждый ключ — ответ."
+                    : "Архив уничтожен. Снимок сохранился."}
+                </h2>
                 <p>
-                  Совпадение — не доказательство. В финале придётся объяснить и
-                  свою версию, и невозможность остальных.
+                  {stage === 0
+                    ? "Войдите с кодом ведущего. Затем получите ключ аварийного снимка в Google Drive, восстановите улики и докажите свою версию."
+                    : "Внешняя копия — единственный путь к уликам. Пароль из документа Google Drive восстанавливает доступ к делу, но не подсказывает убийцу."}
+                </p>
+                <div className="margin-note">
+                  <b>ПРАВИЛО РАССЛЕДОВАНИЯ</b>
+                  <p>
+                    Совпадение — не доказательство. В финале придётся объяснить
+                    и свою версию, и невозможность остальных.
+                  </p>
+                </div>
+                <p className="small-note">
+                  {gateway.mode === "archive"
+                    ? "УЧЕБНЫЙ АРХИВ • не обвинение игроков текущего раунда"
+                    : "ЖИВОЙ РАУНД • факты подтверждены ведущим"}
                 </p>
               </div>
-              <p className="small-note">
-                {gateway.mode === "archive"
-                  ? "УЧЕБНЫЙ АРХИВ • не обвинение игроков текущего раунда"
-                  : "ЖИВОЙ РАУНД • факты подтверждены ведущим"}
-              </p>
-            </div>
-            <div className="terminal">
-              <p className="eyebrow">
-                ACCESS PROTOCOL / {stage === 0 ? "LOGIN" : "RECOVERY"}
-              </p>
-              {stage === 0 ? (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    act(async () => {
-                      await api("/api/auth/login", { playerName: name, code });
-                      setCode("");
-                      await refresh();
-                    });
-                  }}
-                >
-                  <h2>Идентификация</h2>
-                  <label>
-                    Имя в текущей сессии
-                    <input
-                      autoComplete="nickname"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      maxLength={50}
-                    />
-                  </label>
-                  <label>
-                    Код ведущего
-                    <input
-                      autoComplete="off"
-                      type="password"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      required
-                    />
-                  </label>
-                  <button disabled={busy} type="submit">
-                    {busy ? "Проверка…" : "Открыть терминал →"}
-                  </button>
-                </form>
-              ) : (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    act(async () => {
-                      await api("/api/archive/recover", { key });
-                      setKey("");
-                      await refresh();
-                    });
-                  }}
-                >
-                  <h2>Восстановить снимок</h2>
-                  <p>{gateway.driveInstructions}</p>
-                  {gateway.driveUrl ? (
-                    <a
-                      className="drive-link"
-                      href={gateway.driveUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Открыть Google Drive ↗
-                    </a>
-                  ) : (
-                    <p className="setup-warning">
-                      Ссылка Google Drive не настроена. Запросите папку у
-                      ведущего; этот шаг пока нельзя проверить на реальном
-                      Drive.
-                    </p>
-                  )}
-                  <label>
-                    Ключ из внешнего документа
-                    <input
-                      autoComplete="off"
-                      type="password"
-                      value={key}
-                      onChange={(e) => setKey(e.target.value)}
-                      required
-                    />
-                  </label>
-                  <button disabled={busy} type="submit">
-                    {busy ? "Восстановление…" : "Восстановить архив →"}
-                  </button>
-                </form>
-              )}
-            </div>
-          </section>
-        )}
+              <div className="terminal access-terminal">
+                <ArchiveSignal />
+                <p className="eyebrow">
+                  ACCESS PROTOCOL / {stage === 0 ? "LOGIN" : "RECOVERY"}
+                </p>
+                {stage === 0 ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      act(async () => {
+                        await api("/api/auth/login", {
+                          playerName: name,
+                          code,
+                        });
+                        setCode("");
+                        await refresh();
+                      });
+                    }}
+                  >
+                    <h2>Идентификация</h2>
+                    <label>
+                      Имя в текущей сессии
+                      <input
+                        autoComplete="nickname"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                        maxLength={50}
+                      />
+                    </label>
+                    <label>
+                      Код ведущего
+                      <input
+                        autoComplete="off"
+                        type="password"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        required
+                      />
+                    </label>
+                    <button disabled={busy} type="submit">
+                      {busy ? "Проверка…" : "Открыть терминал →"}
+                    </button>
+                  </form>
+                ) : (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      act(async () => {
+                        await api("/api/archive/recover", { key });
+                        setKey("");
+                        await refresh();
+                      });
+                    }}
+                  >
+                    <h2>Восстановить снимок</h2>
+                    <p>{gateway.driveInstructions}</p>
+                    {gateway.driveUrl ? (
+                      <a
+                        className="drive-link"
+                        href={gateway.driveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Открыть Google Drive ↗
+                      </a>
+                    ) : (
+                      <p className="setup-warning">
+                        Ссылка Google Drive не настроена. Запросите папку у
+                        ведущего; этот шаг пока нельзя проверить на реальном
+                        Drive.
+                      </p>
+                    )}
+                    <label>
+                      Ключ из внешнего документа
+                      <input
+                        autoComplete="off"
+                        type="password"
+                        value={key}
+                        onChange={(e) => setKey(e.target.value)}
+                        required
+                      />
+                    </label>
+                    <button disabled={busy} type="submit">
+                      {busy ? "Восстановление…" : "Восстановить архив →"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </section>
+          )}
+        </div>
         {r && (
           <>
             <div className="case-bar">
@@ -362,14 +437,38 @@ export default function App() {
                     setNotice("");
                   }}
                 >
+                  {React.createElement(sectionIcons[id], {
+                    size: 19,
+                    "aria-hidden": true,
+                  })}
                   {label}
                 </button>
               ))}
             </nav>
             {tab === "case" && (
               <section className="investigation-grid">
-                <article className="paper">
-                  <p className="eyebrow">CASE FILE / 01</p>
+                <article className="paper dossier-panel">
+                  <div className="dossier-heading">
+                    <p className="eyebrow">CASE FILE / 01</p>
+                    <Fingerprint size={30} aria-hidden="true" />
+                  </div>
+                  <div className="case-metrics">
+                    <div>
+                      <FileText size={18} aria-hidden="true" />
+                      <strong>{(r.exhibits || []).length}</strong>
+                      <span>материалы</span>
+                    </div>
+                    <div>
+                      <Crosshair size={18} aria-hidden="true" />
+                      <strong>{r.participants.length}</strong>
+                      <span>профили</span>
+                    </div>
+                    <div>
+                      <FlaskConical size={18} aria-hidden="true" />
+                      <strong>{progress.length} / 3</strong>
+                      <span>анализ</span>
+                    </div>
+                  </div>
                   <h2>За ловушкой — человек.</h2>
                   <p>{r.brief}</p>
                   <details>
@@ -379,9 +478,14 @@ export default function App() {
                     <p>{r.attribution}</p>
                   </details>
                   <div className="exhibits">
-                    {(r.exhibits || []).map((d) => (
+                    {(r.exhibits || []).map((d, i) => (
                       <details key={d.id}>
-                        <summary>{d.title}</summary>
+                        <summary>
+                          <span className="exhibit-index" aria-hidden="true">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <span>{d.title}</span>
+                        </summary>
                         <p>{d.content}</p>
                         {d.image && <img src={d.image} alt={d.title} />}
                       </details>
@@ -391,7 +495,7 @@ export default function App() {
                     Начать исследование →
                   </button>
                 </article>
-                <aside className="terminal">
+                <aside className="terminal field-notes">
                   <p className="eyebrow">FIELD NOTES / N.K.</p>
                   <h2>
                     Три проверки.
@@ -441,7 +545,13 @@ export default function App() {
                             ? "ЗАКРЫТО"
                             : "АНАЛИЗ"}
                       </span>
-                      <b>{label}</b>
+                      <b>
+                        {React.createElement(labIcons[id], {
+                          size: 22,
+                          "aria-hidden": true,
+                        })}
+                        {label}
+                      </b>
                     </button>
                   ))}
                   <p>
@@ -450,6 +560,9 @@ export default function App() {
                   </p>
                 </aside>
                 <article className="paper lab-panel" key={active}>
+                  <div className="lab-heading-mark" aria-hidden="true">
+                    {React.createElement(labIcons[active], { size: 30 })}
+                  </div>
                   <p className="eyebrow">
                     TRUTH LAB / {labs.find((x) => x[0] === active)?.[1]}
                   </p>
