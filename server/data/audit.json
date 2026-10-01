@@ -1,5 +1,29 @@
 [
   {
+    "id": "AUDIT_1790868789822_0hz1ca",
+    "time": "2026-10-01T15:33:09.822Z",
+    "ip": "ADMIN",
+    "playerName": null,
+    "action": "ALL_LOCKS_CLEARED",
+    "details": "Администратор очистил все активные блокировки IP."
+  },
+  {
+    "id": "AUDIT_1790868789757_0jegbg",
+    "time": "2026-10-01T15:33:09.757Z",
+    "ip": "ADMIN",
+    "playerName": null,
+    "action": "ALL_LOCKS_CLEARED",
+    "details": "Администратор очистил все активные блокировки IP."
+  },
+  {
+    "id": "AUDIT_1790868789197_m4s0x",
+    "time": "2026-10-01T15:33:09.197Z",
+    "ip": "ADMIN",
+    "playerName": null,
+    "action": "ALL_LOCKS_CLEARED",
+    "details": "Администратор очистил все активные блокировки IP."
+  },
+  {
     "id": "AUDIT_1790868664591_ix6wk",
     "time": "2026-10-01T15:31:04.591Z",
     "ip": "ADMIN",
@@ -2374,29 +2398,5 @@
     "playerName": "Макото Наэги",
     "action": "AUTH_SUCCESS",
     "details": "Вход в систему: студент \"Макото Наэги\" успешно авторизован."
-  },
-  {
-    "id": "AUDIT_1790518286055_007v0c",
-    "time": "2026-09-27T14:11:26.055Z",
-    "ip": "127.0.0.1",
-    "playerName": null,
-    "action": "RECOVERY_SUCCESS",
-    "details": "База данных успешно восстановлена ключом SR-04-271"
-  },
-  {
-    "id": "AUDIT_1790518286046_4b4agd",
-    "time": "2026-09-27T14:11:26.046Z",
-    "ip": "127.0.0.1",
-    "playerName": "Макото Наэги",
-    "action": "AUTH_SUCCESS",
-    "details": "Вход в систему: студент \"Макото Наэги\" успешно авторизован."
-  },
-  {
-    "id": "AUDIT_1790518286027_sxq418",
-    "time": "2026-09-27T14:11:26.027Z",
-    "ip": "ADMIN",
-    "playerName": null,
-    "action": "ALL_LOCKS_CLEARED",
-    "details": "Администратор очистил все активные блокировки IP."
   }
 ]
