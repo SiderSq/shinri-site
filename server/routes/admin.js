@@ -1,4 +1,5 @@
 import express from 'express';
+import { validateRound } from '../archive/engine.js';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -20,7 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sidershope333';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const activeAdminTokens = new Set();
 
 // Admin Authentication Middleware
@@ -32,12 +33,23 @@ export function requireAdmin(req, res, next) {
   next();
 }
 
+// Configurable archive publishing: reject non-unique cases before writing.
+router.get('/archive-round', requireAdmin, (req, res) => res.json({ round: getCase().archiveRound }));
+router.put('/archive-round', requireAdmin, (req, res) => {
+  try {
+    const round = validateRound(req.body);
+    const data = getCase(); data.archiveRound = round; saveCase(data);
+    addAudit(getClientIp(req), 'ARCHIVE_ROUND_PUBLISHED', round.id);
+    res.json({ success: true });
+  } catch (error) { res.status(400).json({ error: error.message }); }
+});
+
 // Admin Login
 router.post('/login', (req, res) => {
   const ip = getClientIp(req);
   const { password } = req.body;
 
-  if (password === ADMIN_PASSWORD) {
+  if (ADMIN_PASSWORD && password === ADMIN_PASSWORD) {
     const token = crypto.randomBytes(32).toString('hex');
     activeAdminTokens.add(token);
     addAudit(ip, 'ADMIN_LOGIN', 'Успешный вход в панель управления куратора.');
@@ -118,6 +130,9 @@ router.post('/case/import-full', requireAdmin, (req, res) => {
     ...newCaseData
   };
 
+  if (mergedCase.archiveRound) {
+    try { validateRound(mergedCase.archiveRound); } catch (e) { return res.status(400).json({ error: e.message }); }
+  }
   saveCase(mergedCase);
   addAudit(ip, 'CASE_IMPORT_FULL', 'Импортирован полный сценарий дела из JSON.');
   res.json({ success: true, message: 'Сценарий дела успешно загружен!', data: mergedCase });

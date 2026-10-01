@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.SHINRI_DATA_DIR || path.join(__dirname, 'data');
 
 const CASE_FILE = path.join(DATA_DIR, 'case.json');
 const LOCKS_FILE = path.join(DATA_DIR, 'locks.json');
