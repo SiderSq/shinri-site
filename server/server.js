@@ -1,17 +1,18 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
 
+import archiveRoutes from './archive/routes.js';
+import { getCase } from './storage.js';
 import authRoutes from './routes/auth.js';
 import investigationRoutes from './routes/investigation.js';
 import adminRoutes from './routes/admin.js';
 import { getClientIp } from './utils/ip.js';
 
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,7 +52,12 @@ app.use('/uploads', express.static(uploadsPath));
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/investigation', investigationRoutes);
+app.use('/api/archive', archiveRoutes);
+// Retire legacy answer/letter endpoints for configurable rounds; no bypass via old UI.
+app.use('/api/investigation', (req, res, next) => {
+  if (getCase().archiveRound && !['/status', '/round-time'].includes(req.path)) return res.status(410).json({ error: 'Используйте доказательный архив /api/archive.' });
+  next();
+}, investigationRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Serve frontend static build if exists
@@ -86,8 +92,6 @@ app.listen(PORT, () => {
   ╠═════════════════════════════════════════════════════════════════╣
   ║  ➜ Терминал доступен:     http://localhost:${PORT}                  ║
   ║  ➜ Панель администратора: http://localhost:${PORT}/admin         ║
-  ║  ➜ Код доступа по умолчанию: 28042004333                        ║
-  ║  ➜ Пароль администратора:   sidershope333                       ║
   ╚═════════════════════════════════════════════════════════════════╝
   `);
 });

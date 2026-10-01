@@ -1,6 +1,6 @@
 import express from 'express';
 import { getCase, addAudit } from '../storage.js';
-import { createSessionToken, getSession, updateSessionState } from '../utils/session.js';
+import { createSessionToken, getSession, updateSessionState, clearSession } from '../utils/session.js';
 import { getClientIp } from '../utils/ip.js';
 
 const router = express.Router();
@@ -32,6 +32,7 @@ router.post('/login', (req, res) => {
     if (!session) {
       sessionId = createSessionToken('AUTHENTICATED', ip, cleanName);
     } else {
+      delete session.archiveVersion; session.archiveProgress = []; session.archiveVerdict = null;
       session.playerName = cleanName;
       updateSessionState(sessionId, 'AUTHENTICATED');
     }
@@ -60,6 +61,7 @@ router.post('/login', (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
+  clearSession(req.cookies?.shinri_session || req.headers['x-session-id']);
   res.clearCookie('shinri_session');
   res.json({ success: true, state: 'NEW' });
 });

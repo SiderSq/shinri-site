@@ -9,8 +9,10 @@
     "build": "npm --prefix client install && npm --prefix client run build",
     "dev": "node server/server.js",
     "client:dev": "npm run dev --prefix client",
-    "test": "node tests/e2e/runner.mjs",
-    "test:strict": "node tests/e2e/runner.mjs --strict"
+    "test": "node --test --test-concurrency=1 tests/archive/*.test.mjs",
+    "test:strict": "node --test --test-concurrency=1 tests/archive/*.test.mjs",
+    "test:legacy": "node tests/e2e/runner.mjs",
+    "test:ui": "node tests/archive/browser.mjs"
   },
   "keywords": [
     "danganronpa",
@@ -28,5 +30,8 @@
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.1",
     "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
   }
 }
